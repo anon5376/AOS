@@ -1,0 +1,24 @@
+┌ Agents (4) ────────┐┌ Open tasks (3) ───────────┐┌ Messages ─────────────────┐
+│● impl-a     impleme││#1   Add stall detection im││operator  →impl-a     [TASK│
+│○ impl-b     impleme││#2   Port presets to TS  im││operator  →impl-b     [TASK│
+│○ lead       lead   ││#3   Research budget enfoim││operator  →impl-b     [TASK│
+│○ reviewer   reviewe││                           ││impl-a    →reviewer   [DONE│
+│                    ││                           ││operator  →reviewer   pleas│
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+│                    ││                           ││                           │
+└────────────────────┘└───────────────────────────┘└───────────────────────────┘
+┌ ─────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ enter view · m send · a add agent · t new task · ↑↓/wheel · tab/click · ? help
+/tmp/claude-0/cap/bus.db  ·  4 agents · 3 open tasks
