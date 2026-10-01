@@ -1,8 +1,28 @@
 {
   "permissions": {
     "defaultMode": "bypassPermissions",
-    "allow": ["WebFetch", "WebSearch", "Bash", "Read", "Edit", "Write", "Glob", "Grep", "NotebookEdit"]
+    "allow": [
+      "WebFetch",
+      "WebSearch",
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "NotebookEdit"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
   }
 }
-
-
