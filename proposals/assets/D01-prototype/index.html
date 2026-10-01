@@ -1,0 +1,174 @@
+<title>AOS Console on Accelerate</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="accelerate.css">
+<link rel="stylesheet" href="box.css">
+<style>
+/* aos console. layout: accelerate shell (rail of lenses / one working column / inspector aside).
+   lime fill appears once per view, on the inspector's primary verb. the terminal surface is the
+   same frame drawn into a cell grid. tokens come from tokens.css; nothing here sets a raw colour
+   except the 16-colour terminal tier, which imitates a real ansi palette on purpose. */
+html, body { height: 100% }
+body { background: var(--bg-000); color: var(--ink-100) }
+.proto { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--line-100); background: var(--bg-100) }
+.proto__l, .proto__r { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) }
+.proto .ax-btn[aria-pressed="true"] { background: var(--bg-300); border-color: var(--ink-200) }
+.app { height: calc(100% - 49px); min-height: 0 }
+.app > * { overflow: auto; min-height: 0 }
+.ax-rail { gap: var(--space-5) }
+.railhead { display: flex; align-items: baseline; justify-content: space-between }
+.answers { display: grid; gap: 2px; margin: 0 }
+.answers div { display: flex; align-items: baseline; gap: var(--space-2) }
+.answers dt { color: var(--ink-300) } .answers dd { margin: 0; color: var(--ink-100); font-variant-numeric: tabular-nums }
+.answers .lead { flex: 1; border-bottom: 1px dotted var(--line-200); transform: translateY(-4px) }
+.answers .warn { color: var(--heat) }
+.railfoot { margin-top: auto; display: grid; gap: var(--space-4) }
+.ax-shell__main { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5) var(--space-6) var(--space-8) }
+.lens { font-size: clamp(44px, 5.4vw, 64px); margin: var(--space-2) 0 0 }
+section { display: grid }
+section > .ax-eyebrow { margin-bottom: var(--space-3) }
+.sechead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap }
+.sechead .ax-eyebrow { margin: 0 }
+.row { display: grid; grid-template-columns: 4.6em 6.5em minmax(0, 1fr) auto; gap: 2px var(--space-3); align-items: baseline; padding: var(--space-3); border-top: 1px solid var(--line-100); cursor: pointer; transition: background-color var(--ax-fast) var(--ax-ease) }
+.row:last-child { border-bottom: 1px solid var(--line-100) }
+.row:hover { background: var(--bg-100) }
+.row[aria-selected="true"] { background: var(--bg-200); box-shadow: inset 2px 0 0 var(--ink-100) }
+.row .why { grid-column: 3 / 5; font-size: 14px; color: var(--ink-200) }
+.row .t { min-width: 0 }
+.row .end { display: flex; gap: var(--space-3); align-items: baseline; justify-content: flex-end }
+.row--tree { grid-template-columns: 5.5em minmax(0, 1fr) 11em 5em 3.6em }
+.row--mem { grid-template-columns: 4em 8.5em minmax(0, 1fr) auto }
+.row--mem.retired .t { color: var(--ink-300); text-decoration: line-through; text-decoration-color: var(--line-200) }
+.row--cfg { grid-template-columns: minmax(0, 1fr) auto; row-gap: var(--space-2) }
+.row--cfg .k { overflow-wrap: anywhere }
+.cfgmeta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4) }
+.row--cfg .k { font-family: var(--font-mono); font-size: 13px; letter-spacing: .02em; min-width: 0 }
+.row--cfg .v { font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums }
+.staged { color: var(--steel) }
+.mono { font-family: var(--font-mono); font-size: 13px; letter-spacing: .03em }
+.num { font-variant-numeric: tabular-nums }
+.dim { color: var(--ink-300) }
+.empty { color: var(--ink-200); margin: 0; padding: var(--space-3) 0; border-top: 1px solid var(--line-100) }
+.note { margin: var(--space-2) 0 0; font-size: 14px; color: var(--ink-300) }
+/* layer strip: one cell per config layer; the winning layer is filled, overridden ones outlined */
+.layers { display: inline-grid; grid-template-columns: repeat(5, 1fr); border-left: 1px solid var(--line-100) }
+.layers span { width: 1.6em; height: 14px; border: 1px solid var(--line-100); border-left: 0; position: relative }
+.layers span.set { background: var(--bg-300) }
+.layers span.win { background: var(--ink-200); border-color: var(--ink-200) }
+.layers-key { display: flex; gap: var(--space-3); flex-wrap: wrap }
+/* swarm lattice: agents as border-collapsed cells */
+.lattice { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--line-100); border-left: 1px solid var(--line-100) }
+.cell { display: grid; gap: var(--space-1); align-content: start; padding: var(--space-3); border-right: 1px solid var(--line-100); border-bottom: 1px solid var(--line-100); background: var(--bg-100); cursor: pointer; min-width: 0; transition: background-color var(--ax-fast) var(--ax-ease) }
+.cell:hover { background: var(--bg-200) }
+.cell[aria-selected="true"] { background: var(--bg-200); box-shadow: inset 0 2px 0 var(--ink-100) }
+.board { grid-template-columns: repeat(5, minmax(150px, 1fr)); overflow-x: auto }
+.bcol { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-3); border-right: 1px solid var(--line-100); border-bottom: 1px solid var(--line-100); min-width: 0 }
+.bhead { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: var(--space-2); border-bottom: 1px solid var(--line-100) }
+.bcard { display: grid; gap: 2px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-100); background: var(--bg-100); cursor: pointer; font-size: 14px; justify-items: start }
+.bcard:hover { background: var(--bg-200) } .bcard[aria-selected="true"] { border-color: var(--ink-100) }
+/* meters: memory budget per scope */
+.meter { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; min-width: 200px }
+.meter__track { height: 6px; background: var(--bg-200); border: 1px solid var(--line-100); position: relative }
+.meter__fill { position: absolute; inset: 0 auto 0 0; background: var(--ink-200) }
+/* brief composer */
+.brief { display: grid; gap: var(--space-3) }
+.brief__ctl { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end }
+.brief__ctl .ax-field { margin: 0; min-width: 160px }
+.eq { margin: 0; padding: var(--space-4); border: 1px solid var(--line-100); background: var(--bg-100); font-family: var(--font-mono); font-size: 13px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere }
+.eq b { font-weight: 500; color: var(--ink-100) } .eq i { font-style: normal; color: var(--ink-300) }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 14px }
+.tbl th { font: 500 12px var(--font-mono); letter-spacing: .05em; color: var(--ink-300); text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line-100); white-space: nowrap }
+.tbl td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line-100); white-space: nowrap }
+.tbl tr[data-sel] { cursor: pointer } .tbl tr[data-sel]:hover { background: var(--bg-100) } .tbl tr[aria-selected="true"] { background: var(--bg-200); box-shadow: inset 2px 0 0 var(--ink-100) }
+.r { text-align: right !important }
+/* svg figures */
+.fig svg text { font-family: var(--font-mono) }
+.fig .ax-panel { overflow: auto; padding: var(--space-4) }
+/* timeline */
+.logb { display: grid; white-space: normal }
+.ev { display: grid; grid-template-columns: 3.6em 5.6em 13.5em 3.6em minmax(0, 1fr); gap: var(--space-3); padding: 1px 0; cursor: pointer }
+.ev:hover .d { color: var(--ink-100) } .ev[aria-selected="true"] { background: var(--bg-200) }
+.ev .d { color: var(--ink-200); min-width: 0 }
+.filters { display: flex; gap: var(--space-2); flex-wrap: wrap }
+/* inspector */
+.ins { display: grid; gap: var(--space-4) }
+.ins__title { font: 400 28px/1.15 var(--font-serif); letter-spacing: -.02em; margin: 0; text-wrap: balance }
+.kv { display: grid; grid-template-columns: 6.6em minmax(0, 1fr); gap: var(--space-2) var(--space-3); margin: 0; font-size: 14px }
+.kv dt { font: 500 12px/1.9 var(--font-mono); letter-spacing: .05em; color: var(--ink-300) } .kv dd { margin: 0; min-width: 0 }
+.acts { display: flex; flex-wrap: wrap; gap: var(--space-2) }
+.ins .ax-field { margin: 0 }
+.ins .ax-disclosure summary { font-size: 15px; padding-block: var(--space-3) }
+.ins .ax-disclosure details > :not(summary) { margin: 0 0 var(--space-4) }
+.ins textarea.ax-input { min-height: 64px; resize: vertical; font-family: var(--font-mono) }
+.evl { display: grid; grid-template-columns: 3.4em minmax(0, 1fr); gap: 2px var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--line-100); font-size: 13px }
+.chain { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 13px }
+.chain li { display: grid; grid-template-columns: 5em minmax(0, 1fr) auto; gap: var(--space-3) }
+.chain li.win { color: var(--ink-100) } .chain li:not(.win) { color: var(--ink-300) }
+.diff { margin: 0 }
+.diff .ax-terminal__body { white-space: pre-wrap }
+.ax-terminal__body .add { color: var(--signal-ink) } .ax-terminal__body .del { color: var(--danger) }
+/* palette */
+.pal { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg-000) 70%, transparent); display: flex; align-items: flex-start; justify-content: center; padding: 12vh var(--space-4) 0; z-index: 10 }
+.pal__box { width: min(640px, 100%); background: var(--bg-100); box-shadow: var(--shadow-float); padding: var(--space-4); display: grid; gap: var(--space-3) }
+.pal__box p { margin: 0 }
+/* terminal surface */
+.ttywrap { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-5) var(--space-4) var(--space-8); overflow: auto }
+.ttymeta { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: space-between; width: 100%; max-width: 1340px }
+.ttyframe { position: relative; max-width: 100%; overflow: auto; border: 1px solid var(--line-200) }
+.tty { --lh: 17px; margin: 0; padding: var(--space-2) 0; background: var(--bg-000); color: var(--ink-200); font: 400 13px/var(--lh) var(--font-mono); letter-spacing: 0; white-space: pre; outline: none; font-variant-ligatures: none; font-kerning: none }
+.tty:focus-visible { box-shadow: var(--focus-ring) }
+.tty span { display: inline-block; vertical-align: top; height: var(--lh) }
+.t-cell, .t-box { width: 1ch; text-align: center; overflow: hidden }
+.t-i1 { color: var(--ink-100) } .t-i2 { color: var(--ink-200) } .t-i3 { color: var(--ink-300) }
+.t-ln { color: var(--line-100) } .t-l2 { color: var(--line-200) }
+.t-sg { color: var(--signal-ink) } .t-ht { color: var(--heat) } .t-dg { color: var(--danger) } .t-st { color: var(--steel) }
+.t-sf { background-color: var(--signal); color: var(--on-signal); box-shadow: inset 0 0 0 1px var(--signal-edge) }
+.t-rv { background-color: var(--ink-100); color: var(--bg-000) }
+.t-b { font-weight: 500 }
+.t-bg-se, .t-box.t-bg-se { background-color: var(--bg-200) }
+/* 16-colour tier: what an ansi-only terminal shows. selection is reverse video, no painted grounds */
+.tty.c16 { background: #000; color: #c0c0c0 }
+.c16 .t-i1 { color: #fff } .c16 .t-i2 { color: #c0c0c0 } .c16 .t-i3, .c16 .t-ln, .c16 .t-l2 { color: #808080 }
+.c16 .t-sg { color: #55ff55 } .c16 .t-ht { color: #ffff55 } .c16 .t-dg { color: #ff5555 } .c16 .t-st { color: #55ffff }
+.c16 .t-sf { background-color: #55ff55; color: #000; box-shadow: none } .c16 .t-rv { background-color: #c0c0c0; color: #000 }
+.c16 .t-bg-se, .c16 .t-box.t-bg-se { background-color: #c0c0c0; color: #000 }
+.ttykeys { max-width: 1340px; width: 100% }
+@media (max-width: 1000px) { .app { height: auto } .app > * { overflow: visible } .railfoot { margin-top: 0 } .ax-shell__main { padding-inline: var(--space-5) } }
+@media (max-width: 700px) { .row { grid-template-columns: 4em minmax(0, 1fr) } .row > :nth-child(2) { grid-column: 2 } .row .t { grid-column: 1 / -1 } .row .why { grid-column: 1 / -1 } .row .end { grid-column: 1 / -1; justify-content: flex-start }
+   .ev { grid-template-columns: 3.4em minmax(0, 1fr) } .ev > :nth-child(2), .ev > :nth-child(4) { display: none } .ev .d { grid-column: 1 / -1 } }
+</style>
+
+<div class="proto" role="region" aria-label="prototype controls">
+  <div class="proto__l"><span class="ax-meta">prototype / fixture data shaped like the acs bus, not a run</span></div>
+  <div class="proto__r">
+    <span class="ax-meta">surface</span>
+    <div class="ax-btn-group" role="group" aria-label="surface"><button class="ax-btn ax-btn--sm" id="sv-dash" aria-pressed="true">dashboard</button><button class="ax-btn ax-btn--sm" id="sv-tty" aria-pressed="false">terminal</button></div>
+    <button class="ax-btn ax-btn--sm ax-btn--ghost" id="reset" type="button">reset fixture</button>
+  </div>
+</div>
+<div id="dash" class="ax-shell app">
+  <nav class="ax-rail" aria-label="lenses" id="rail"></nav>
+  <main class="ax-shell__main" id="pane" tabindex="-1"></main>
+  <aside class="ax-shell__aside" id="aside" aria-label="inspector"></aside>
+</div>
+<div id="term" class="ttywrap" hidden>
+  <div class="ttymeta">
+    <span class="ax-meta"><b>acs</b> / the terminal console / click it, then use the keys below</span>
+    <span class="proto__r">
+      <span class="ax-btn-group" role="group" aria-label="terminal size"><button class="ax-btn ax-btn--sm" data-size="80x24">80×24</button><button class="ax-btn ax-btn--sm" data-size="120x36" aria-pressed="true">120×36</button><button class="ax-btn ax-btn--sm" data-size="160x48">160×48</button></span>
+      <span class="ax-btn-group" role="group" aria-label="colour tier"><button class="ax-btn ax-btn--sm" data-tier="true" aria-pressed="true">truecolor</button><button class="ax-btn ax-btn--sm" data-tier="c16">16 colour</button></span>
+    </span>
+  </div>
+  <div class="ttyframe"><pre class="tty" id="tty" tabindex="0" aria-label="terminal console, keyboard driven" aria-describedby="ttyhelp"></pre></div>
+  <p class="ax-meta ttykeys" id="ttyhelp">j/k move / enter open card / esc back / 1-8 lens / a accept / r request changes / u requeue / g assign / y answer / A approve or apply / e edit / X retire / R roll back / t trace / p pause / : command, for example <span class="mono">memory approve m-36 --why checked</span></p>
+</div>
+<div id="pal" class="pal" hidden role="dialog" aria-modal="true" aria-label="command line">
+  <form id="palf" class="pal__box"><label class="ax-meta" for="ci">/ aos : command, same grammar as qagent</label>
+    <input id="ci" class="ax-input" autocomplete="off" spellcheck="false" placeholder="accept 7 --why tests pass">
+    <p class="ax-meta">accept N --why … / revise N --why … / requeue N / assign N agent / cancel N --why … / answer q-407 --why … / memory approve m-36 --why … / agent add cheap-1 --role cheap-worker --harness claude / config set constraints.maxRetries 3 / config apply --why … / pause / goto N / now, tree, board, graph, timeline, agents, memory, config</p>
+    <p class="ax-status" id="pals" role="status" aria-live="polite"></p></form>
+</div>
+<script src="fixture.js"></script>
+<script src="model.js"></script>
+<script src="tui.js"></script>
+<script src="console.js"></script>
+<script src="dash.js"></script>

@@ -64,6 +64,16 @@ Order is the recommended build order (value toward the goal, then dependencies).
 - PR #17 (worktrees) is treated as landing; no proposal proposes worktrees, and P14 builds on top of them.
 - Cross-family review is a hypothesis to test. If arm B in the benchmark does not beat arm A on defect escape, P03 stays optional and P04 is demoted.
 
+## Design
+
+How the operator sees and drives AOS. Specs only; each names the proposals that would ship its parts. Prototype: https://claude.ai/artifact/JKLMqiCekJFcktsit2kcMw (fixture data, source in `assets/D01-prototype/`).
+
+| Id | Title | Builds on | Status |
+|---|---|---|---|
+| [D01](D01-cli-tui-dashboard-design.md) | One console for AOS on Accelerate: one read model, eight lenses (now, tree, board, graph, timeline, agents, memory, config), one verb set, one command grammar | P05, P06, P07, P08, P09, P10, P11, P15 | proposed |
+| [D02](D02-terminal-on-accelerate.md) | The terminal console on Accelerate: colour roles and tiers, lime budget, layouts from 80x24, glyphs, keys, idle redraw | D01, P09 | proposed |
+| [D03](D03-dashboard-on-accelerate.md) | The dashboard on Accelerate: shell, lens components, inspector, palette, one verb endpoint, self-hosted fonts under the CSP | D01, P10 | proposed |
+
 ## Considered and not proposed
 
 - A chat-wrapper TUI, KPI tiles, gradients, ornamental dashboards (AGENTS.md "slop traps"). P09 and P10 keep every number tied to a list and a seq.
