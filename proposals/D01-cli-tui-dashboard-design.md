@@ -2,10 +2,11 @@
 
 - **Kind:** design spec (no code). It ties P05, P09 and P10 into one model and adds the pieces they leave open.
 - **Edge or parity:** the three-question screen, board and timeline are PARITY (`hermes-delta.md` rows 2, 12). The candidate edges are marked **[hypothesis]** below and are tested in section 11, not claimed.
-- **Cost:** L in total, staged in section 10. **Risk:** medium; the main risk is drifting into an ornamental dashboard (section 9).
+- **Cost:** L in total, staged in section 10. **Risk:** medium; the main risk is drifting into an ornamental dashboard (section 9.2 lists what is left out on purpose).
 - **Targets:** TypeScript core and dashboard (`src/core/`, `src/cli/`, `src/dashboard/`), Rust TUI (`rust/src/app.rs` on `rust-port`).
 - **Status:** proposed. Needs the owner's word on the open decisions in section 12 before any build.
-- **Companion prototype:** a clickable console built from fixture data (https://claude.ai/artifact/JKLMqiCekJFcktsit2kcMw, private to the owner). The fixture is illustrative; it contains no real run.
+- **Design system:** Accelerate (owner-supplied, section 9.1) for the dashboard, adapted to the terminal in section 7.6.
+- **Companion prototype:** a clickable console on Accelerate, built from fixture data (https://claude.ai/artifact/JKLMqiCekJFcktsit2kcMw, private to the owner). The fixture is illustrative; it contains no real run. Screenshots: `assets/D01-prototype-now-void.png`, `assets/D01-prototype-timeline-void.png`.
 
 ## 1. What exists today
 
@@ -91,7 +92,7 @@ In the TUI, a verb key on the selected row opens the card with the `why` prompt 
 
 ## 6. CLI
 
-Scriptable, boring, composable. Rules: every command has `--json` (the `Frame` slice it prints); human output is plain text, no colour required, stable column order; exit codes are meaningful (`wait` already uses 0/2).
+Scriptable, boring, composable, and in the same Accelerate voice as the other two surfaces (lowercase, `/` separators, numbered sections). Rules: every command has `--json` (the `Frame` slice it prints); human output is plain text, no colour required, stable column order; exit codes are meaningful (`wait` already uses 0/2).
 
 ```
 qagent status                 three answers + agents (below)
@@ -108,159 +109,244 @@ qagent export --format json|html   whole bus, self-contained
 Target `status` output at 80x24 (mock, not current behaviour):
 
 ```text
-bus ~/.agent-bus/bus.db  run r-0412 live  seq #412  5 agents (3 working)
+bus ~/.agent-bus/bus.db / run r-0412 live / seq #412 / 5 agents (3 working)
 
-NEEDS YOU 3
-  #7  submitted  Hard USD cap per run          rev-1 gemini ≠ codex      #411
-  #3  submitted  Add per-task token cap in…    rev-1 gemini ≠ claude     #409
-  #6  unrouted   Cost on status screen         no agent can take it      #360
-STUCK 2
-  #4  47m  impl-b  Loop guard: same tool call 5x                          #371
-  #8  60m  impl-a  Docs: budgets and limits                               #402
-QUESTIONS 1
-  #7  USD cap vs unknown cost (codex, hermes)?                            #407
-COST   $5.20 of $60.00 · 1.13M tokens · 2 agents report no cost (n/a)
+■ 01 / needs you  03
+  #7  submitted  hard usd cap per run          rev-1 gemini ≠ codex      #411
+  #3  submitted  add per-task token cap        rev-1 gemini ≠ claude     #409
+  #6  unrouted   cost on the status screen     no agent can take it      #360
+■ 02 / stuck  02
+  #4  47 min  impl-b  loop guard: same call 5x                           #371
+  #8  60 min  impl-a  docs: budgets and limits                           #402
+■ 03 / open questions  01
+  #7  usd cap vs unknown cost (codex, hermes)?                           #407
+■ 04 / cost
+  $5.20 of $60.00 / 1.13M tokens / 2 agents report no cost (—)
 ```
 
 ## 7. Terminal console (`acs`)
 
-One screen, three zones, keyboard only. Usable at 80x24; wider terminals add a right-hand card, never different content.
+One screen, three zones, keyboard only, in the Accelerate voice (section 9.1): lowercase, `/` separators, numbered eyebrows, `[ ok ]` status codes, one lime thing per screen. Usable at 80x24. Wider terminals add the rail and the card as columns, never different content. The adaptation of the design system to a terminal is in section 7.6.
 
-Rules from AGENTS.md bars: redraw only on change (blocking wait on the watcher, wake for the next time-based change only; P09); every row ends in `#seq`; minimum size message below 80x24 instead of clipping.
+Bars from AGENTS.md: redraw only on change (blocking wait on the watcher, wake for the next time-based change only; P09); every row ends in `#seq`; a "needs 80x24" message instead of clipping.
 
-### 7.1 Now (default)
+### 7.1 Now (80x24, default)
+
+The tab line is the rail collapsed to one row; the current lens is lime and underlined. `>` marks the selected row. The first eyebrow is the only lime one.
 
 ```text
-AOS r-0412 budget enforcement   stuck 2 · needs you 3 · $5.20 of $60 · live #412
+aos. / r-0412 / now                                                    live #412
+[1] now  [2] tree  [3] board  [4] graph  [5] timeline
 ────────────────────────────────────────────────────────────────────────────────
-NEEDS YOU 3
-> #7  submitted  Hard USD cap per run           rev-1 gemini ≠ codex       #411
-  #3  submitted  Add per-task token cap in…     rev-1 gemini ≠ claude      #409
-  #6  unrouted   Cost on status screen          no agent can take it       #360
-STUCK 2
-  #4  47m  impl-b  Loop guard: same tool call 5x                           #371
-  #8  60m  impl-a  Docs: budgets and limits                                #402
-QUESTIONS 1
-  #7  USD cap vs unknown cost (codex, hermes)?                             #407
-AGENTS
-  lead ● claude   impl-a ● claude   impl-b ● codex   rev-1 ○ gemini
-  scout · hermes (offline)                                1.13M tok · 2 cost n/a
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
+stuck 02   needs you 03   open questions 02                   spent $5.20 of $60
 ────────────────────────────────────────────────────────────────────────────────
- j/k move  Enter open  a accept  r revise  p pause  : command  ? keys   1-5 lens
+■ 01 / needs you
+> #7   hard usd cap per run         submitted  rev-1 gemini ≠ codex         #411
+  #3   add per-task token cap       submitted  rev-1 gemini ≠ claude        #409
+  #6   cost on the status screen    open       no agent can take it         #360
+■ 02 / stuck
+  #4   loop guard: same call 5x     47 min     impl-b                       #371
+  #8   docs: budgets and limits     60 min     impl-a                       #402
+■ 03 / open questions
+  #7   usd cap vs unknown cost (codex, hermes)?                             #407
+■ 04 / agents
+  lead ■  impl-a ■  impl-b ■  rev-1 ◇  scout ·          1.13M tok / 2 cost —
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+ j/k move / enter open / a accept / r revise / p pause / : command / ? keys
 ```
 
-Header words are the three answers. Pressing `Tab` jumps between the NEEDS YOU, STUCK and QUESTIONS groups; `Enter` opens the card for the selected row. Unused rows stay blank: the screen does not fill space with decoration.
+`Tab` jumps between the needs-you, stuck and questions groups; `Enter` opens the card. Unused rows stay blank: the screen does not fill space with decoration.
 
 ### 7.2 Review card (Enter on #7)
 
 ```text
-#7 Hard USD cap per run                                    submitted · round 1
+aos. / r-0412 / now / #7                                               live #412
 ────────────────────────────────────────────────────────────────────────────────
-author    impl-b  codex (openai)
-reviewer  rev-1   gemini (google)   different family
-depends   #3 submitted
-result    cap checked before each turn; cost unknown for codex turns, tokens
-          used instead
-question  #407 USD cap vs unknown cost (codex, hermes)? unanswered
-
-EVENTS
-  #411 impl-b   task_submitted   USD cap, round 1
-  #407 impl-b   question         USD cap vs unknown cost
-  #371 lead     task_created     #7 Hard USD cap per run
-
-why> _
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
+hard usd cap per run.                                        submitted / round 1
 ────────────────────────────────────────────────────────────────────────────────
- Ctrl-A accept  Ctrl-R request changes  y answer question  Esc back  t trace
+author     impl-b / codex (openai)
+reviewer   rev-1 / gemini (google)     ■ different family
+depends    #3 submitted
+result     cap checked before each turn. cost unknown for codex turns,
+           tokens used instead
+question   #407 usd cap vs unknown cost (codex, hermes)? unanswered
+
+■ last events
+  #411  impl-b   task_submitted   usd cap, round 1
+  #407  impl-b   question         usd cap vs unknown cost
+  #371  lead     task_created     hard usd cap per run
+
+why  _
+[ -- ] a reason is required. it is stored on the event
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+ ctrl+a accept → / ctrl+r request changes / y answer / t trace / esc back
 ```
 
-A reason is typed first; the verb key then commits. Accepting with an unanswered question shows a one-line warning, not a block (the operator's authority is theirs).
+A reason is typed first; the verb key then commits. The accept line is the single lime item. Accepting with an unanswered question shows a one-line `[ !  ]` warning, not a block.
 
 ### 7.3 Tree
 
+Paths replace indentation (Accelerate shows routes as paths): `/1/3` is task 3 under task 1.
+
 ```text
-AOS r-0412 budget enforcement   stuck 2 · needs you 3 · $5.20 of $60 · live #412
+aos. / r-0412 / tree                                                   live #412
+[1] now  [2] tree  [3] board  [4] graph  [5] timeline
 ────────────────────────────────────────────────────────────────────────────────
-TREE                                                    state            owner
-[-] #1 Ship budget enforcement for runs                 working          lead
-    #2 Research budget prior art                        accepted         scout
-  > #3 Add per-task token cap in core                   submitted        impl-a
-    #4 Loop guard: same tool call 5x                    working 47m!     impl-b
-    #5 Pause and resume from CLI                        changes req.     impl-a
-    #6 Cost on status screen                            open             -
-    #7 Hard USD cap per run                             submitted        impl-b
-    #8 Docs: budgets and limits                         working 60m!     impl-a
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
+stuck 02   needs you 03   open questions 02                   spent $5.20 of $60
 ────────────────────────────────────────────────────────────────────────────────
- j/k move  h/l fold  Enter open  / filter  1-5 lens  : command  ? keys
+■ 01 / 8 tasks
+  /1          − ship budget enforcement for runs   working                  lead
+  /1/2          research budget prior art          accepted                scout
+> /1/3          add per-task token cap in core     submitted              impl-a
+  /1/4          loop guard: same call 5x           stuck 47 min           impl-b
+  /1/5          pause and resume from the cli      changes requested      impl-a
+  /1/6          cost on the status screen          open                        —
+  /1/7          hard usd cap per run               submitted              impl-b
+  /8            docs: budgets and limits           stuck 60 min           impl-a
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+ j/k move / h/l fold / enter open / / filter / 1-5 lens / : command
 ```
 
-`!` marks stuck in text; there is no status colour (DESIGN.md). Colour, where a terminal has it, only dims the secondary columns and marks the selected row.
+`stuck 47 min` is text in `heat`; there is no colour-only state.
 
 ### 7.4 Timeline and trace
 
+The log is the one instrument panel on the screen, so it carries the corner ticks (`┌ ┐ └ ┘`) and ends in the cursor. Event kinds that mean trouble (`changes_requested`, `task_cancelled`) take `heat`; failures take `danger`.
+
 ```text
-TIMELINE  task #7                                      filter: / · clear: Esc
+aos. / r-0412 / timeline                                               live #412
+[1] now  [2] tree  [3] board  [4] graph  [5] timeline
 ────────────────────────────────────────────────────────────────────────────────
-#412  rev-1    review_started     #3   reviewing impl-a (anthropic) as google
-#411  impl-b   task_submitted     #7   USD cap, round 1
-#409  impl-a   task_submitted     #3   token cap in core, round 1
-#407  impl-b   question           #7   USD cap vs unknown cost
-#405  rev-1    changes_requested  #5   resume does not restore claimed tasks
-#402  impl-a   task_note          #8   drafting section on limits
-#398  lead     task_note          #1   plan: caps first, then guards, then UI
-#371  impl-b   task_note          #4   tool call repeated; trying alt regex
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
+stuck 02   needs you 03   open questions 02                   spent $5.20 of $60
 ────────────────────────────────────────────────────────────────────────────────
- j/k move  Enter jump to task  f filter kind  t this task only  Esc back
+┌ events.log / r-0412 ─────────────────────────────────────newest first / #412 ┐
+│ #412  rev-1   review_started     #3  reviewing impl-a (anthropic) as google  │
+│ #411  impl-b  task_submitted     #7  usd cap, round 1                        │
+│ #409  impl-a  task_submitted     #3  token cap in core, round 1              │
+│ #407  impl-b  question           #7  usd cap vs unknown cost                 │
+│ #405  rev-1   changes_requested  #5  resume does not restore claimed tasks   │
+│ #402  impl-a  task_note          #8  drafting section on limits              │
+│ #398  lead    task_note          #1  plan: caps first, then guards, then ui  │
+│ #371  impl-b  task_note          #4  tool call repeated; trying new regex    │
+│ #360  lead    task_created       #6  show cost next to stuck and needs you   │
+│ #341  scout   task_accepted      #2  rev-1 (google) accepted scout (nous)    │
+│ ▍                                                                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+────────────────────────────────────────────────────────────────────────────────
+ j/k move / enter jump to task / f filter kind / t this task / esc back
 ```
 
 ### 7.5 States that must be designed, not left to chance
 
 ```text
-FIRST RUN (no bus yet)
-  No agents yet. Add one with  qagent agent add <id> --role <role>
-  or press  a  here. Then press  t  to give it a task.      (about 2 minutes)
+first run (no bus yet)
+  [ -- ] no agents yet. add one: qagent agent add <id> --role <role>
+         or press a here, then t to give it a task
 
-NOTHING NEEDS YOU
-  NEEDS YOU 0   Nothing is waiting on you. Next check happens when a task is
-  submitted or an agent asks a question.
+nothing needs you
+  ■ 01 / needs you
+  nothing is waiting on you. next check: a submission or a question
 
-PAUSED
-  header: ... · PAUSED by operator #413 · press p to resume
-  new claims are refused; running turns finish; the list below is unchanged.
+paused
+  header: aos. / r-0412 / now        paused by operator #413 / p resumes
+  [ !  ] new claims are refused. running turns finish
 
-BUS UNREADABLE OR NEWER SCHEMA (P02 guard)
-  Cannot read bus: schema 7 is newer than this build (6). Nothing was changed.
+bus unreadable or newer schema (p02 guard)
+  [ !! ] cannot read bus: schema 7 is newer than this build (6)
+         nothing was changed
 
-TERMINAL TOO SMALL
-  needs 80x24, this is 62x20
+terminal too small
+  [ !  ] needs 80x24, this is 62x20
 ```
+
+### 7.6 Accelerate in a terminal
+
+Accelerate (`accelerate-design-system`, supplied by the owner) is a web system: tokens, four type voices, hairline grids, one lime signal, fast mechanical motion. A terminal keeps the ideas and drops what it cannot render. Mapping:
+
+**Colour.** Same tokens, three tiers chosen at start from `COLORTERM` and `TERM`: truecolor uses the token hex; 256-colour uses the nearest xterm index (below); 16-colour uses the ANSI approximation. Void is the default; Paper is used when the terminal reports a light background (OSC 11 reply, else `COLORFGBG`), and `AOS_THEME=void|paper` overrides.
+
+| Token | Void hex | 256 | 16-colour | Use in the TUI |
+|---|---|---|---|---|
+| `ink-100` | #eeefe7 | 255 | bright white | primary text, selected row text |
+| `ink-200` | #a9ada1 | 248 | white | secondary text, `why` lines |
+| `ink-300` | #868b80 | 102 | bright black | meta, `#seq`, paths, labels |
+| `line-100` | #2a2e27 | 235 | bright black | rules, box edges |
+| `line-200` | #697163 | 242 | bright black | corner ticks, the operated-input border |
+| `bg-200` / `bg-300` | #1b1e1a / #252923 | 234 / 235 | none | title bar, selected row (truecolor only) |
+| `signal` | #d9ff6c | 191 | bright green | the one lime thing per screen |
+| `heat` | #ff9654 | 209 | yellow | stuck, changes requested, `[ !  ]` |
+| `danger` | #ff6b81 | 204 | red | failures, `[ !! ]` |
+| `steel` | #86b9dc | 110 | cyan | submitted, info |
+
+Paper swaps to the Paper hexes (`signal-ink` becomes olive #4a6400, 256: 58; `heat` #a84000, 256: 130; `danger` #b0153f, 256: 125; `steel` #2a6890, 256: 24). Lime is never used as text on a light terminal, the system's own rule. The terminal's own background is not painted: only `bg-200`/`bg-300` surfaces (title bar, selected row) are, and only in truecolor. In 256 and 16 colours the selected row is reverse video and the title bar is a rule. Status always carries a word or a code, so a 16-colour or monochrome terminal loses nothing.
+
+**Type.** One monospace face replaces the four voices, so hierarchy comes from weight, dim and case, not size. Lens titles and eyebrows are bold lowercase; the accent period after a title (`needs you.`) is lime and is the only lime besides the focus item. Display type and the big Antonio readout digits are dropped; the readout becomes the header strip `stuck 02   needs you 03   ...` (two rows, label over value, from 100 columns). Numbers use fixed width and fixed precision per column, and `—` for a missing value, exactly as the system specifies. Casing is lowercase everywhere except proper nouns and code.
+
+**Layout.** The Shell becomes a column budget, mirroring `rail` / main / aside:
+
+| Terminal | Layout |
+|---|---|
+| under 80x24 | `[ !  ] needs 80x24` and nothing else |
+| 80 to 99 columns | tab line (rail collapsed to one row); main; card replaces main on `Enter` |
+| 100 to 139 | 24-column rail with dotted leaders and `[1]` to `[5]` indexes; main |
+| 140 and wider, or 120x30 with the card | rail (24), main, card (about 34); the card is the aside |
+
+At 120x30 with the card open the same content looks like this (excerpt, truncated rows kept so widths are real):
+
+```text
+aos. / r-0412 / now                                                                                            live #412
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+│ aos.                   │ stuck 02  needs you 03  questions 02  spent $5.20 of $60         │ task / #7
+│                        │ ────────────────────────────────────────────────────────────     │ hard usd cap per run.
+│ run r-0412             │ ■ 01 / needs you                                                 │ submitted / round 1
+│                        │ > #7  hard usd cap per run      submitted        #411            │
+│ ■ now ········ [1]     │   #3  add per-task token cap    submitted        #409            │ reviewer rev-1 gemini
+│ ▤ tree ······· [2]     │   #6  cost on the status screen open              #360           │ ■ different family
+│ ◇ board ······ [3]     │ ■ 02 / stuck                                                     │ depends #3
+│ § graph ······ [4]     │   #4  loop guard: same call 5x  47 min           #371            │
+│ ▍ timeline ··· [5]     │   #8  docs: budgets and limits  60 min           #402            │ why  _
+│                        │ ■ 03 / open questions                                            │ [ -- ] reason required
+│ not yet                │   #7  usd cap vs unknown cost?                   #407            │
+│ ? agents ····· [–]     │                                                                  │ accept → / request changes
+│ ? memory ····· [–]     │                                                                  │
+│ ? config ····· [–]     │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+│                        │                                                                  │
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ j/k move / enter open / a accept / r revise / p pause / : command / ? keys
+```
+
+**Lines and glyphs.** Hairlines are light box-drawing (`─ │`), square corners only (`┌ ┐ └ ┘`, never `╭`). Corner ticks mark the single instrument panel (the log, or the card), at most twice per screen. Rail items use the system's glyphs `■ ▤ ◇ § ? ▍`, a dotted leader `····` and a bracketed index that doubles as the shortcut. Status codes are the system's: `[ -- ]` idle, `[ .. ]` busy, `[ ok ]`, `[ !  ]`, `[ !! ]`. Tags are `■ word`, colour repeating the word. If `LANG` is not UTF-8 the glyphs fall back to ASCII: `# = o s ? |` for `■ ▤ ◇ § ? ▍`, `-` for `─`, `+` for corners.
+
+**Motion.** The system's motion is mechanical and small; the TUI has less. Hover steps, 120/200 ms transitions and the 2 px nudge do not exist. The two allowed loops are handled so they cost no redraw: the block cursor is the terminal's own blinking cursor (DECSCUSR), set once; the pulsing live mark on working tasks is a static `●` (working) versus `○` (idle), because a pulse needs a timer and would break the zero-redraws-when-idle bar. The ticker is not ported: the system says use it only for real current values, and nothing in the console needs to scroll.
+
+**Voice.** Copy follows the system's rules: terse, declarative, scoped, lowercase, third person for the system, "you" only in instructions; numbers two-digit and zero-padded in eyebrows; metadata separated by ` / `, never bullets or pipes; no exclamation marks, no emoji. Example: `[ ok ] recorded as event #413`, not "Success! Your review was saved."
+
+**What is not borrowed.** The imagery treatments (duotone, dither, orbits), the wordmark in Archivo and the `ax-frame` border do not exist in a terminal. The wordmark is the text `aos.` with a lime period.
+
 
 ## 8. Keyboard model
 
@@ -274,21 +360,54 @@ Modeless navigation, one prompt, no chords beyond Ctrl for destructive commits.
 
 ## 9. Dashboard
 
-Same five lenses, same words, same keys. It adds only what a terminal cannot do well: the dependency graph as server-rendered SVG, simultaneous list and detail (right-hand drawer), and links you can share within the machine.
+### 9.1 Design system: Accelerate
 
-- **Layout:** top strip with the three answers as buttons that jump to their lists; lens rail; one reading pane; drawer for the selected item; command line at the bottom. At phone width the rail becomes a row and the drawer stacks.
-- **Visual language:** `DESIGN.md` as amended by P10: flat, hairlines, system fonts, one accent for links and focus, no icons, no gradients, no external assets, CSP nonce. State is a word. "Needs you" is distinguished by position and weight, not colour. Both themes, because the artifact page must follow the viewer's theme; the product default stays the dark palette in `DESIGN.md`.
+The owner supplied Accelerate as the design system for the dashboard. It replaces two earlier visual references: `DESIGN.md` (flat, no status colour, one reading column, now superseded; P10's "amendment" becomes "adopt Accelerate") and `.impeccable/design.json` ("night sector console"). Both stay in ACS until the owner retires them. What the system asks of this product:
+
+- **Instrument, not ornament.** Structure from hairline rules and numbered grids, no shadows at rest, square corners.
+- **One signal.** Lime marks the single thing that matters on a screen. In the console that is the primary action (accept, or requeue when a task is stuck); the current lens in the rail is lime by the system's own rule. Nothing else is lime.
+- **Voice.** Lowercase, terse, scoped, `/` separators, two-digit numbering, accent period on titles, no emoji or exclamation marks.
+- **Status carries a word.** Tags and status lines say the state in words (`submitted`, `stuck`, `[ ok ]`, `[ !! ]`); tone repeats it. The earlier open question about an alert colour is answered by the system: `heat` for warning and stuck, `danger` for failure, `steel` for info.
+- **Two themes** from the same tokens, Void (default) and Paper. The prototype also follows the viewer's light/dark setting.
+
+### 9.2 Layout and component mapping
+
+The console is an Accelerate Shell: rail, one main column, an aside.
+
+| Screen part | Accelerate component | Content |
+|---|---|---|
+| left column | `ax-rail` (312 px) | wordmark `aos.`, chip `run r-0412`, five lenses with glyphs and `[1]` to `[5]` indexes, a `not yet` chip for agents, memory and config, then run status and the pause control |
+| top of main | `ax-command` | `/ aos : now`, opens the command palette (`:` or `⌘K`); the palette floats with `shadow-float` |
+| title | display type, lowercase, accent period | the lens question: `what needs you.`, `what blocks what.` |
+| three answers | `ax-readout` | `stuck 02`, `needs you 03`, `open questions 02`, `spent $5.20 of $60` with "2 agents report no cost" as the delta line. A missing cost is `—`, never 0 |
+| lists | numbered `ax-eyebrow` sections, hairline rows | `01 / needs you` (loud), `02 / stuck`, `03 / open questions`, `04 / cost by agent` (quiet eyebrows). Each row is `#id`, title, a tag, `#seq` |
+| state | `ax-tag` | `submitted` (info), `accepted` (ok), `changes requested` and `stuck` (warn), `working` (live), `open` (neutral) |
+| tree | paths | `/1/3` instead of indentation; `+` and `−` fold |
+| board | border-collapsed lattice | numbered columns by lifecycle; no gaps between cells, no drag |
+| graph | `ax-panel ax-ticks ax-dots` plus `ax-figure` caption | hairline SVG, selected node in `signal-edge`, caption `fig. 01 / task dependencies` |
+| timeline | `ax-terminal ax-ticks` | `events.log / r-0412`, one line per event with `#seq`, actor, kind, task, text; ends in the cursor |
+| aside | `ax-shell__aside` | the selected task: eyebrow `task / #7`, serif title with accent period, key-value block, reviewer family tag, `ax-field` for the reason, `ax-status` line, buttons, last events |
+| actions | `ax-btn` | `accept →` is the one primary; `request changes`, `requeue`, `show events` secondary or ghost; `cancel` is a danger button with a confirm step |
+| feedback | `ax-status` | `[ ok ] recorded as event #413`; `[ !! ] a reason is required...` |
+
+Left out on purpose: the ticker (no live values worth scrolling, and it breaks the idle bar), duotone and dither imagery, the `ax-frame` border (tools never carry it), a signal band. One `ax-ticks` panel per view (the log or the graph), at most two.
+
+### 9.3 Behaviour
+
 - **Writes:** the verbs in section 5, each one POST, same-origin, session-bound, one event with `why`. No config editing, no process spawning (P10 risk list).
-- **Idle:** one SSE connection, no polling beyond the existing 10 s safety read; unchanged from `src/dashboard/server.ts`.
-- **Budget against becoming the removed React dashboard:** no client framework, no router (URL fragments pick the lens), asset size cap asserted in a test.
+- **Idle:** one SSE connection and the existing 10 s safety read. The only animation is the system's live pulse and cursor, both CSS, no JS timers.
+- **Fonts:** the system's four families (Antonio, Archivo, IBM Plex Mono, Newsreader). AGENTS.md and ACS's CSP forbid external assets, so the dashboard serves the system's self-hosted `woff2` files (about 190 KB for the Latin subsets, already in the system's `fonts/` folder, SIL Open Font License). The prototype loads them from Google Fonts only because an artifact page cannot ship font files.
+- **Budget against becoming the removed React dashboard:** no client framework, no router (URL fragments pick the lens), the system's CSS (about 25 KB, `tokens.css` plus `bundle.css`) as the only stylesheet, asset size cap asserted in a test.
+- **Open item for the owner:** ACS's `DESIGN.md` forbids external assets and charts and says the page "does one thing". Adopting Accelerate means replacing that file; the spec does not edit it.
 
-The prototype implements Now, Tree, Board, Graph and Timeline, the drawer, `why`-required actions that append events, pause/resume, the command line and the keys above, on fixture data.
+The prototype implements every row of the table above on fixture data: five lenses, the aside with `why`-required actions that append events, a confirm step on cancel, pause and resume, the command palette with the CLI grammar, the keys from section 8, and both themes.
+
 
 ## 10. Build order (maps to existing proposals)
 
 1. **P05** computes attention and cost; extend it to emit the `Frame` and `status --json` (new: `needs`, `tree`, `cost` commands, `why` strings). This is the core of D01.
 2. **P09** renders Now, the review card and the 80x24 layout; add Tree and Timeline lenses and the parity test.
-3. **P10** adds the dashboard views and the amendment. Reuse the `Frame`; the dashboard's `/api/state` becomes `/api/frame`.
+3. **P10** adds the dashboard views on Accelerate (replacing its DESIGN.md amendment with adopting the system). Reuse the `Frame`; the dashboard's `/api/state` becomes `/api/frame`.
 4. **P08** supplies `why`; without it, section 5 cannot hold. **P07** supplies pause/resume. **P03** makes the reviewer-family line enforceable rather than merely shown.
 
 New work this spec adds beyond those proposals: the `Frame` contract and parity test, the `needs`/`tree`/`cost` commands, the question list as a first-class item (needs a `question` event kind; P13 defines `needs_decision`), and the Graph lens.
@@ -306,12 +425,13 @@ New work this spec adds beyond those proposals: the `Frame` contract and parity 
 1. **Names.** Keep `qagent` and `acs`, or ship one `aos` binary with the TUI as `aos` (no argument) and the CLI as `aos <noun> <verb>`? Recommendation: one binary named by the owner, since two names for one state is the thing the manifesto argues against. AGENTS.md says not to call ACS "AOS" until it is; the rename is the owner's call.
 2. **Canonical TUI implementation.** The console needs the `Frame` queries in both TS and Rust. Until the canonical implementation is decided (AGENTS.md "Two implementations"), the spec assumes TS is the schema reference and Rust is the live-operation surface.
 3. **Replay.** Replaying the board "as of seq N" would be distinctive, but it only works if events carry full transitions. Not verified; this spec does not depend on it. Check `events.data_json` coverage before promising it.
-4. **Colour.** DESIGN.md has no status colour. The spec keeps that. Say if a single alert tone is wanted for "needs you".
+4. **Accelerate in the product repo.** Where the design system lives (ACS `docs/` or a package) and when `DESIGN.md` and `.impeccable/design.json` are retired. The spec assumes Accelerate replaces both.
 
 ## 13. Considered and rejected
 
 - A chat pane as the primary surface. Messages are an event kind inside the Timeline lens; AOS is not a chat client.
-- KPI tiles, sparklines and spend charts. "Spent $5.20 of $60" is a sentence with a link to the table behind it.
+- KPI tiles, sparklines and spend charts (the system's `readout` is a row of computed values, which is what the header strip is).
+ "Spent $5.20 of $60" is a sentence with a link to the table behind it.
 - A separate terminal-only and web-only vocabulary. One verb set, one lens list.
 - Drag and drop on the board. Moving work is an explicit action with a reason.
 - Animated or streaming token output in the console. The console reports state; transcripts stay in the trace.
