@@ -6,7 +6,7 @@ Paste the block below into `/goal` to start a working session. Context is in `AG
 
 ```
 Work in ACS ($ACS_DIR, anon5376/agent-communication-system), guided by AOS (AGENTS.md, README.md,
-manifesto.md if present). Read CHANGELOG [Unreleased], branch rust-port and PR #17 first: much
+MANIFESTO.md; its principles bind). Read CHANGELOG [Unreleased], branch rust-port and PR #17 first: much
 of what looks missing already exists.
 
 THESIS: no model grades its own work. ACS is the control plane where agents from different
@@ -37,25 +37,45 @@ ITEMS (the real gaps; stall detection, requeue and `qagent trace` already ship):
    verdicts, shown to the operator, used for routing, and explainable ("routed to X because 14/16
    accepted by a different family on refactors"). Self-improvement lives here: proposals to
    change presets, routing weights or skills land as reviewed tasks with a diff and evidence from
-   past runs, and are kept only if the endurance benchmark improves. Nothing rewrites itself
-   silently. Read and write agentskills.io SKILL.md for interop, but do not make skill editing
+   past runs, and are kept only if the endurance benchmark improves. Per the manifesto: only with
+   the operator's agreement or an explicitly enabled policy, every change versioned and
+   reversible, and an agent proposing an improvement never gains authority to expand its own.
+   Every run ends with a retrospective (what worked, what failed, why, what to change) stored on
+   the bus. Read and write agentskills.io SKILL.md for interop, but do not make skill editing
    the centre.
-3. Hierarchy presets (AOS). The hierarchy exists in config (allowedChildAgentIds, role and
+3. Self-organizing hierarchy (manifesto: "the swarm organizes itself") on top of presets.
+   Given a goal and its documents, a planner proposes roles, prompts and a hierarchy, including
+   per-task roles that disappear after the task, and asks the human when consequential
+   uncertainty remains. The operator can accept, edit or replace the proposal. Underneath:
+   hierarchy presets (AOS). The hierarchy exists in config (allowedChildAgentIds, role and
    authority, RolePolicy, BusConstraints.maxDelegationDepth). Missing: prompts and packaging. A
    preset is one versioned file (roles, authority, spawn lists, constraints, prompts), applied
    with `qagent preset apply`, shareable, with outcomes attributed to each preset version.
    Operator-defined; never a stock roster.
-4. Enforced limits. optionalTokenBudget and optionalApiCostBudgetUSD exist in config but nothing
+4. Scale without collisions. Clear ownership so workers never overwrite, interrupt or silently
+   invalidate each other (leases, worktrees, per-task ownership); no arbitrary agent ceiling in
+   the design, only budgets and provider limits; aggregation, search and drill-down so a human
+   can follow goal, task tree, dependencies, evidence and timeline without reading every
+   conversation. Measure coordination cost as agents grow (2, 8, 32), and add agents only where
+   results improve.
+5. Enforced limits. optionalTokenBudget and optionalApiCostBudgetUSD exist in config but nothing
    enforces them. Enforce per-task and per-run budgets, loop guards and depth limits in the
    supervisor; show cost on the main screen.
-5. Continuous operation. Scheduled and recurring tasks, per-task worktree isolation (finish
+6. Continuous operation. Scheduled and recurring tasks, per-task worktree isolation (finish
    PR #17), an approval queue that can reach the operator outside the terminal.
-6. Surfaces. CLI for scripting, `acs` TUI for live operation, web dashboard for a glance. Bars:
+7. Surfaces on one state (manifesto: CLI and dashboard agree). CLI for scripting, `acs` TUI for
+   live operation, web dashboard for a glance and structure (task tree, dependency graph, board,
+   timeline); inspect, redirect, pause and resume from either. Bars:
    one screen shows what is stuck, what needs me, what it costs; install to first accepted task
    under 5 minutes; usable at 80x24 keyboard-only; zero redraws when idle, measured; every
    on-screen state links to an event sequence number.
-7. Ultra-customizable, honestly. Propose what that means (presets, adapters, routing weights,
-   hooks, TUI layout) and cut anything that is configuration for its own sake.
+8. Research-grade provenance and customizability. Tasks carry evidence and keep observation,
+   assumption and conclusion distinct; unresolved questions stay visible; memory is inspectable,
+   attributable and scoped per project. Everything the manifesto lists (roles, prompts, models,
+   harnesses, routing, tools, skills, MCP servers, budgets, memory, approval rules) is
+   configurable with useful defaults. Propose the interfaces, and cut configuration for its own
+   sake. Evaluate (do not assume) small local models for suitable subtasks against quality,
+   time and cost.
 
 Constraints: keep zero-daemon coordination; schema changes are migrations that keep the TS and
 Rust implementations compatible; no new dependencies without asking; follow DESIGN.md (see
@@ -65,7 +85,7 @@ not back; never merge, publish or release without my word.
 
 ## Why this goal
 
-**North star (AOS README):** ultra-customizable, self-improving harness for prolonged autonomous work with hierarchy presets. ACS already has the plumbing: durable bus, claims, leases, review gates, supervisor, adapters, stall detection, trace. What it lacks is the part that makes long autonomous runs *trustworthy and improving*, which is where it can beat Hermes rather than imitate it.
+**North star (AOS README and MANIFESTO.md):** an ultra-customizable, self-improving harness for prolonged autonomous research and engineering work, where a swarm organizes itself around a goal, scales without colliding, leaves knowledge behind, and stays accountable to a human who sets the boundaries. ACS already has the plumbing: durable bus, claims, leases, review gates, supervisor, adapters, stall detection, trace. What it lacks is the part that makes long autonomous runs *trustworthy and improving*, which is where it can beat Hermes rather than imitate it.
 
 **Hermes Agent** (sources checked 2026-10-01: [GitHub repo](https://github.com/NousResearch/hermes-agent) showed 250.4k stars, 53.6k forks, MIT; features quoted from its README):
 

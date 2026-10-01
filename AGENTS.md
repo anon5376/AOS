@@ -6,6 +6,8 @@ Instructions for AI agents working from this repository (AOS). Read this, then `
 
 AOS is the owner's concept: an **Agentic Orchestration System**, an ultra-customizable, self-improving harness for prolonged, continuous, autonomous work, with established hierarchy prompt presets. The README is written by the owner, not by AI. Do not rewrite it.
 
+`MANIFESTO.md` states the principles (research first, self-organizing swarm, scale with coordination, everything configurable, one engine for CLI and dashboard, knowledge left behind, accountable autonomy). Read it before proposing anything; where it and the code disagree, the manifesto is the direction and the gap is a proposal.
+
 AOS is **direction, not a spec**. The code being built lives in the sibling repo **ACS** (`anon5376/agent-communication-system`, binary `qagent`). Sessions started here analyse ACS, propose improvements, and implement them there. Take AOS's ideas conceptually (hierarchy presets, self-improvement, long-running autonomy, deep customization); never copy it literally, and never describe ACS as "AOS".
 
 Where things live:
@@ -13,6 +15,7 @@ Where things live:
 | Thing | Location |
 |---|---|
 | The bigger goal for ACS work | `GOAL.md` (this repo) |
+| Principles | `MANIFESTO.md` (this repo) |
 | ACS checkout | `$ACS_DIR` (set by the SessionStart hook), else `../agent-communication-system` |
 | ACS design docs | `PRODUCT.md`, `DESIGN.md`, `docs/V2-DESIGN.md`, `docs/architecture.md`, `docs/competitive-analysis.md`, `docs/standout-features.md`, `protocol/PROTOCOL.md`, `CHANGELOG.md` (`[Unreleased]` is the real current state) |
 | Phase 1 proposals and decisions | `proposals/` in this repo (AOS), one markdown file per proposal; this is the only place planning files are allowed, so they survive between sessions |
@@ -96,6 +99,7 @@ Use when they fit: `deep-research` (competitors, protocols), `code-review` and `
 - Lead with the outcome; be direct and dense. No filler, no repeated summaries.
 - Make reversible assumptions and keep going; ask only when the answer changes the result.
 - Don't add process the owner didn't ask for: no status logs, trackers, extra planning files. The one exception is `proposals/` (above), because Phase 1 output must outlive the session.
+- Self-improvement features need operator consent or an explicit policy, versioning and rollback; never let an agent expand its own authority.
 - Ask before: new dependencies, deleting material work, force-pushes, external messages, publishing, merging.
 - Report failures exactly. Never claim something ran, passed or shipped without execution evidence.
 - Commit trailers and PR attribution follow the session's instructions.
