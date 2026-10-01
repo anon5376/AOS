@@ -1,0 +1,17 @@
+/* box-drawing arms, drawn per cell so lines join like a real terminal */
+.t-lr{background:linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat}
+.t-ud{background:linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat}
+.t-rd{background:linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat}
+.t-ld{background:linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat}
+.t-ur{background:linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat}
+.t-ul{background:linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat}
+.t-udr{background:linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat}
+.t-udl{background:linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat}
+.t-lrd{background:linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat}
+.t-lru{background:linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat}
+.t-udlr{background:linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat, linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat, linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat}
+.t-r{background:linear-gradient(currentColor,currentColor) right center / calc(50% + .5px) 1px no-repeat}
+.t-l{background:linear-gradient(currentColor,currentColor) left center / calc(50% + .5px) 1px no-repeat}
+.t-d{background:linear-gradient(currentColor,currentColor) center bottom / 1px calc(50% + .5px) no-repeat}
+.t-u{background:linear-gradient(currentColor,currentColor) center top / 1px calc(50% + .5px) no-repeat}
+.t-LR{background:linear-gradient(currentColor,currentColor) center / 100% 3px no-repeat}
