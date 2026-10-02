@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AOS swarm composition</title>
+<!--
+  Design composition for #/swarm: the Acceleration Chamber package combined with the
+  Accelerate tokens, voice and fonts. Static, deterministic, illustrative state only.
+  Open swarm.html (nothing selected) or swarm.html#A-22 (inspector open).
+  Below 760px the same page becomes the mobile composition.
+-->
+<style>
+@font-face{font-family:"Antonio";font-weight:300 500;font-display:swap;src:url(fonts/antonio.woff2) format("woff2")}
+@font-face{font-family:"Archivo";font-weight:400 600;font-display:swap;src:url(fonts/archivo.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-400.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-500.woff2) format("woff2")}
+
+:root{
+  /* core ten, unchanged from DESIGN.md */
+  --cobalt:#101CFF; --void:#050509; --uv:#6B45FF; --ion:#B8FF3D; --verm:#FF3B12;
+  --mineral:#F4F4F0; --cold:#FAFBFF; --graphite:#15151B; --metal:#7F818C; --rule:#CFD0D6;
+  /* derived steps already in the package */
+  --void-raise:#0B0B14; --void-plate:#101017; --edge:#23232C; --edge-strong:#34343F;
+  --metal-dim:#4A4B55; --text-2:#A2A4AE; --on-cobalt-2:#C3C7FF; --edge-on-cobalt:#4C56FF;
+  /* proposed in HANDOFF.md section 4: text-safe signal steps on void (>= 4.5:1) */
+  --cobalt-text:#6A73FF; --uv-text:#8F75FF;
+  /* type: Accelerate's self-hosted families fill the package's three roles */
+  --f-display:"Antonio","Archivo Narrow","Arial Narrow",sans-serif;
+  --f-ui:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --rail-h:44px; --cli-h:32px; --insp-w:380px; --gate-h:104px;
+  --track:0.14em;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--void);color:var(--cold);font:400 14px/1.45 var(--f-ui);-webkit-font-smoothing:antialiased;overflow:hidden}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.lab{font:400 11px/1 var(--f-mono);letter-spacing:var(--track);color:var(--metal)}
+.sq{display:inline-block;width:7px;height:7px;background:currentColor;vertical-align:1px;margin-right:8px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:1px solid var(--cold);outline-offset:2px}
+
+/* state vocabulary: marker + word, never colour alone */
+.st{font:500 11px/1 var(--f-mono);letter-spacing:0.08em;white-space:nowrap}
+.st.running{color:var(--cobalt-text)} .st.waiting{color:var(--metal)}
+.st.blocked{color:var(--uv-text)} .st.failed,.st.conflict{color:var(--verm)}
+.st.complete,.st.verified{color:var(--ion)}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:var(--rail-h) auto 1fr auto var(--cli-h);height:100vh;width:100vw}
+.rail{display:flex;align-items:stretch;border-bottom:1px solid var(--edge);background:var(--void)}
+.lock{display:flex;align-items:center;gap:10px;padding:0 20px;border-right:1px solid var(--edge);font:500 17px/1 var(--f-display);letter-spacing:0.08em}
+.routes{display:flex;flex:1;min-width:0;overflow:hidden}
+.routes a{display:flex;align-items:center;gap:6px;padding:0 11px;color:var(--text-2);text-decoration:none;font:400 12px/1 var(--f-mono);letter-spacing:0.06em;border-right:1px solid var(--edge);white-space:nowrap}
+.routes a b{font-weight:400;color:var(--metal-dim)}
+.routes a[aria-current]{background:var(--cobalt);color:var(--cold)}
+.routes a[aria-current] b{color:var(--on-cobalt-2)}
+.rail-r{display:flex;align-items:center;gap:12px;padding:0 14px;flex:none;font:400 11px/1 var(--f-mono);color:var(--text-2);white-space:nowrap}
+.tag{border:1px solid var(--edge-strong);padding:4px 7px;letter-spacing:0.1em;color:var(--cold)}
+.dot-lim{color:var(--uv-text)}
+
+/* the committed field: objective band is cobalt while the mission runs */
+.objective{background:var(--cobalt);color:var(--cold);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:32px;padding:16px 32px 18px}
+.eyebrow{font:400 11px/1 var(--f-mono);letter-spacing:0.1em;color:var(--on-cobalt-2);margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eyebrow .sq{color:var(--cold)}
+.objective h1{font:300 44px/0.96 var(--f-display);letter-spacing:-0.005em;max-width:26ch}
+.readouts{display:grid;grid-template-columns:repeat(5,auto);gap:0;border-left:1px solid var(--edge-on-cobalt)}
+.readouts div{padding:0 18px;border-right:1px solid var(--edge-on-cobalt)}
+.readouts dt{font:400 10px/1 var(--f-mono);letter-spacing:0.12em;color:var(--on-cobalt-2);margin-bottom:8px}
+.readouts dd{font:300 30px/1 var(--f-display);letter-spacing:0;white-space:nowrap}
+.readouts dd small{font:400 11px/1 var(--f-mono);color:var(--on-cobalt-2);margin-left:4px}
+
+/* ---------- field + inspector ---------- */
+.body{display:grid;grid-template-columns:minmax(0,1fr);min-height:0;position:relative}
+.has-sel .body{grid-template-columns:minmax(0,1fr) var(--insp-w)}
+.field{position:relative;min-height:0;overflow:hidden;background:
+  linear-gradient(var(--void),var(--void)) padding-box;}
+.ladder{position:absolute;left:0;top:0;bottom:0;width:112px;border-right:1px solid var(--edge);z-index:1;background:var(--void)}
+.ladder div{position:absolute;left:0;right:0;padding:0 16px;border-top:1px solid var(--edge)}
+.ladder div span{display:block;margin-top:10px}
+.ladder .now{color:var(--cold)}
+.ladder div em{display:block;font:400 11px/1.3 var(--f-mono);font-style:normal;color:var(--metal);margin-top:6px;letter-spacing:0}
+svg.traces{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.plate{position:absolute;width:264px;height:60px;background:var(--void-plate);border:1px solid var(--edge);border-left:3px solid var(--sc,var(--metal));padding:6px 10px 0 10px;text-align:left;transition:opacity 140ms cubic-bezier(.2,0,0,1)}
+.plate .r1{display:flex;justify-content:space-between;gap:8px;font:500 13px/1.2 var(--f-ui)}
+.plate .r1 i{font:400 11px/1.3 var(--f-mono);font-style:normal;color:var(--metal)}
+.plate .r2{font:400 11px/1.6 var(--f-mono);color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plate .r3{display:flex;gap:10px;font:400 11px/1.5 var(--f-mono);color:var(--text-2);white-space:nowrap}
+.plate.off>*{opacity:.5}
+.plate.path{border-color:var(--edge-strong)}
+.plate[aria-pressed="true"]{background:var(--cobalt);border-color:var(--cold);opacity:1}
+.plate[aria-pressed="true"] .r1 i,.plate[aria-pressed="true"] .r2,.plate[aria-pressed="true"] .r3{color:var(--on-cobalt-2)}
+.plate[aria-pressed="true"] .st{color:var(--cold)}
+.plate:hover{border-color:var(--edge-strong)}
+.plate.cluster{border-left-style:double;border-left-width:3px}
+.dist{position:absolute;left:0;right:0;bottom:0;display:flex;height:3px;gap:1px}
+.dist span{display:block;height:3px}
+.core{position:absolute;display:flex;align-items:center;gap:16px;padding:8px 14px 8px 8px;background:var(--void);border:1px solid var(--edge-strong);text-align:left}
+.core .t{font:300 24px/1 var(--f-display)}
+.core .m{font:400 11px/1.5 var(--f-mono);color:var(--text-2);margin-top:5px}
+.exit{position:absolute;font:400 11px/1.4 var(--f-mono);color:var(--uv-text);letter-spacing:0.04em}
+.caption{position:absolute;right:20px;bottom:12px;font:400 11px/1 var(--f-mono);color:var(--metal);letter-spacing:0.06em}
+.frontier{position:absolute;left:132px;right:20px;top:12px;display:flex;justify-content:space-between;font:400 11px/1 var(--f-mono);color:var(--metal);letter-spacing:0.06em}
+.frontier b{font-weight:400;color:var(--text-2)}
+
+.insp{display:none;border-left:1px solid var(--edge-strong);background:var(--void-raise);overflow:auto;padding:22px 24px 24px}
+.has-sel .insp{display:block}
+.insp .eb{display:flex;justify-content:space-between;align-items:center}
+.insp h2{font:300 38px/0.98 var(--f-display);margin:14px 0 10px}
+.insp .why{font:400 13px/1.45 var(--f-ui);color:var(--text-2);margin:10px 0 18px;max-width:40ch}
+.facts{display:grid;grid-template-columns:96px 1fr;row-gap:7px;font:400 12px/1.35 var(--f-mono)}
+.facts dt{color:var(--metal);letter-spacing:0.04em}
+.facts dd{color:var(--cold)}
+.facts dd small{color:var(--text-2);font-size:11px}
+.sec{margin-top:20px;padding-top:12px;border-top:1px solid var(--edge)}
+.ev{border:1px solid var(--edge);border-left:3px solid var(--verm);padding:9px 10px;margin-top:10px}
+.ev p{font:400 13px/1.4 var(--f-ui);margin:6px 0}
+.ev .mono{font-size:11px;color:var(--text-2)}
+.x{font:400 11px/1 var(--f-mono);color:var(--metal);border:1px solid var(--edge-strong);padding:5px 7px}
+.btnrow{display:flex;gap:8px;margin-top:16px}
+.btn{height:32px;padding:0 12px;border:1px solid var(--edge-strong);font:500 11px/1 var(--f-mono);letter-spacing:0.08em;color:var(--cold)}
+
+/* ---------- gate strip: only while a gate is open ---------- */
+.gate{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,232px);border-top:1px solid var(--verm);background:var(--void-raise);min-height:var(--gate-h)}
+.gate .q{padding:14px 32px 14px 32px}
+.gate .q .lab{color:var(--verm)}
+.gate h3{font:300 26px/1.05 var(--f-display);margin:9px 0 6px;letter-spacing:0}
+.gate .q p{font:400 12px/1.4 var(--f-ui);color:var(--text-2);max-width:70ch}
+.opt{border-left:1px solid var(--edge);padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;text-align:left}
+.opt .c{font:400 11px/1.45 var(--f-mono);color:var(--text-2)}
+.opt .c b{font-weight:500;letter-spacing:0.08em}
+.opt .go{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border:1px solid var(--edge-strong);font:500 11px/1 var(--f-mono);letter-spacing:0.08em;margin-top:10px}
+.opt.primary .go{background:var(--cobalt);border-color:var(--cobalt)}
+.opt.danger .go{border-color:var(--verm);color:var(--verm)}
+.rev{color:var(--ion)} .irr{color:var(--verm)}
+
+.cli{display:flex;align-items:center;gap:18px;padding:0 20px;border-top:1px solid var(--edge);font:400 11px/1 var(--f-mono);color:var(--text-2);white-space:nowrap;overflow:hidden}
+.cli .p{color:var(--cold)}
+.cli .sp{flex:1}
+
+/* ---------- mobile: ordered stages, never a shrunken graph ---------- */
+.m{display:none}
+@media (max-width:1199px){
+  .rail-r>span:nth-child(3){display:none}
+  .gate{grid-template-columns:minmax(0,1fr) repeat(3,176px)}
+  .gate .q p{display:none}
+  .readouts div:nth-child(5){display:none}
+  .objective h1{font-size:38px}
+}
+@media (max-width:759px){
+  body{overflow:auto}
+  .app{display:none}
+  .m{display:block;min-height:100vh;padding-bottom:calc(var(--cli-h) + 168px)}
+  .mrail{display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;border-bottom:1px solid var(--edge)}
+  .mrail .lock{border:0;padding:0}
+  .mrail .lock span{font:400 11px/1 var(--f-mono);letter-spacing:0.1em;color:var(--text-2);margin-left:6px}
+  .mobj{background:var(--cobalt);padding:16px 16px 18px}
+  .mobj h1{font:300 36px/0.98 var(--f-display);margin-bottom:16px}
+  .mro{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+  .mro dt{font:400 10px/1 var(--f-mono);letter-spacing:0.12em;color:var(--on-cobalt-2);margin-bottom:5px}
+  .mro dd{font:300 24px/1 var(--f-display)}
+  .mro dd small{font:400 11px/1 var(--f-mono);color:var(--on-cobalt-2);margin-left:3px}
+  .stage{border-bottom:1px solid var(--edge)}
+  .stage>button{display:grid;grid-template-columns:28px 1fr auto;align-items:baseline;width:100%;padding:14px 16px;text-align:left;min-height:48px}
+  .stage>button .n{font:400 11px/1 var(--f-mono);color:var(--metal)}
+  .stage>button .t{font:500 14px/1.2 var(--f-ui)}
+  .stage>button .s{font:400 11px/1.4 var(--f-mono);color:var(--text-2);display:block;margin-top:3px}
+  .stage>button .x2{font:400 13px/1 var(--f-mono);color:var(--metal)}
+  .stage.open>button .t{color:var(--cold)}
+  .row{display:grid;cursor:pointer;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:2px 10px;padding:9px 16px 9px calc(16px + var(--d,0)*14px);border-top:1px solid var(--edge);border-left:3px solid var(--sc,transparent);min-height:52px;width:100%;text-align:left}
+  .row .t{font:500 13px/1.25 var(--f-ui)}
+  .row .t i{font:400 11px/1 var(--f-mono);font-style:normal;color:var(--metal);margin-left:6px}
+  .row .s2{grid-column:1/-1;min-width:0;font:400 11px/1.4 var(--f-mono);color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row.sel{background:var(--cobalt)}
+  .row.sel .s2,.row.sel .t i{color:var(--on-cobalt-2)} .row.sel .st{color:var(--cold)}
+  .mgate{position:fixed;left:0;right:0;bottom:var(--cli-h);background:var(--void-raise);border-top:1px solid var(--verm);padding:12px 16px}
+  .mgate h3{font:300 22px/1.05 var(--f-display);margin:7px 0 10px}
+  .mgate .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mgate .go{height:44px;display:flex;align-items:center;justify-content:center;border:1px solid var(--edge-strong);font:500 11px/1 var(--f-mono);letter-spacing:0.08em}
+  .mgate .go.primary{background:var(--cobalt);border-color:var(--cobalt)}
+  .mgate .more{font:400 11px/1 var(--f-mono);color:var(--text-2);margin-top:9px}
+  .mcli{position:fixed;left:0;right:0;bottom:0;height:var(--cli-h);display:flex;align-items:center;gap:12px;padding:0 16px;border-top:1px solid var(--edge);background:var(--void);font:400 11px/1 var(--f-mono);color:var(--text-2);white-space:nowrap;overflow:hidden}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(5,5,9,.72)}
+  .sheet{display:none;position:fixed;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;background:var(--void-raise);border-top:1px solid var(--edge-strong);padding:16px 16px 24px}
+  .has-sel .scrim,.has-sel .sheet{display:block}
+  .sheet h2{font:300 34px/1 var(--f-display);margin:12px 0 8px}
+  .sheet .facts{grid-template-columns:92px 1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ======================= desktop / tablet ======================= -->
+<div class="app" id="app">
+  <header class="rail">
+    <div class="lock"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M16.98 16.18A6.5 6.5 0 1 1 16.98 7.82"/><path d="M0 12 23 12"/></svg>AOS</div>
+    <nav class="routes" aria-label="routes">
+      <a href="#"><b>1</b>missions</a><a href="#"><b>2</b>intake</a><a href="#" aria-current="page"><b>3</b>swarm</a><a href="#"><b>4</b>evidence</a><a href="#"><b>5</b>synthesis</a><a href="#"><b>6</b>evolution</a><a href="#"><b>7</b>capabilities</a><a href="#"><b>8</b>memory</a>
+    </nav>
+    <div class="rail-r">
+      <span>msn-2291 / gen 07</span>
+      <span class="tag">s illustrative</span>
+      <span>4 providers / <span class="dot-lim">! 1 limited</span></span>
+      <span class="tag">ctrl k</span>
+    </div>
+  </header>
+
+  <section class="objective" aria-label="objective">
+    <div>
+      <div class="eyebrow"><span class="sq"></span>03 / swarm &nbsp;&middot;&nbsp; running since 09:52Z &nbsp;&middot;&nbsp; done: one ranked conclusion with cost bounds</div>
+      <h1>Can solid-state cell supply meet 2029 EU demand?</h1>
+    </div>
+    <dl class="readouts">
+      <div><dt>agents</dt><dd>13<small>running / 53</small></dd></div>
+      <div><dt>tokens</dt><dd>1.84M<small>of 2.5M</small></dd></div>
+      <div><dt>cost</dt><dd>$21.40<small>est.</small></dd></div>
+      <div><dt>elapsed</dt><dd>01:12:44</dd></div>
+      <div><dt>evidence</dt><dd>128<small>3 objections</small></dd></div>
+    </dl>
+  </section>
+
+  <div class="body">
+    <main class="field" id="field" aria-label="acceleration field">
+      <div class="ladder" id="ladder" aria-hidden="true"></div>
+      <div class="frontier"><span><b>frontier</b> &nbsp;3 objections unresolved &middot; 1 ambiguity assumed (2029 = calendar)</span><span>depth 0-5 shown &middot; d to change</span></div>
+      <svg class="traces" id="traces" aria-hidden="true"></svg>
+      <div id="nodes"></div>
+      <div class="caption" id="caption"></div>
+    </main>
+    <aside class="insp" id="insp" aria-label="inspector"></aside>
+  </div>
+
+  <section class="gate" aria-label="decision gate">
+    <div class="q">
+      <div class="lab"><span class="sq"></span>? gate &nbsp;/&nbsp; authority: operator</div>
+      <h3>A-22 is blocked by a provider rate limit and two dependents are waiting.</h3>
+      <p>Filings audit holds the unit-conversion check that could invert EV-131. Waiting costs 41 seconds. Rerouting costs about $2.10 and loses the cite-check skill.</p>
+    </div>
+    <button class="opt"><span class="c">dependents stay queued<br><b class="rev">+ reversible</b></span><span class="go">[1] wait 41s</span></button>
+    <button class="opt primary"><span class="c">loses cite-check skill &middot; ~$2.10<br><b class="rev">+ reversible</b></span><span class="go">[2] reroute to codex</span></button>
+    <button class="opt danger"><span class="c">drops 6 evidence items<br><b class="irr">x irreversible</b> / confirm: STOP</span><span class="go">[3] stop branch</span></button>
+  </section>
+
+  <footer class="cli">
+    <span class="p">&rsaquo; aos swarm msn-2291</span>
+    <span class="tag">s simulated</span>
+    <span>last event 12:44:19Z / A-22 rate limit</span>
+    <span class="sp"></span>
+    <span>ctrl ` expand &middot; tab regions &middot; enter inspect &middot; ? keys</span>
+  </footer>
+</div>
+
+<!-- ======================= mobile (<760px) ======================= -->
+<div class="m" id="m">
+  <header class="mrail">
+    <div class="lock"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M16.98 16.18A6.5 6.5 0 1 1 16.98 7.82"/><path d="M0 12 23 12"/></svg>AOS<span>swarm</span></div>
+    <span class="tag" style="font:400 11px/1 var(--f-mono)">s illustrative</span>
+  </header>
+  <section class="mobj">
+    <div class="eyebrow"><span class="sq"></span>msn-2291 / gen 07 / running</div>
+    <h1>Can solid-state cell supply meet 2029 EU demand?</h1>
+    <dl class="mro">
+      <div><dt>agents</dt><dd>13<small>running / 53</small></dd></div>
+      <div><dt>tokens</dt><dd>1.84M<small>of 2.5M</small></dd></div>
+      <div><dt>cost</dt><dd>$21.40<small>est.</small></dd></div>
+      <div><dt>elapsed</dt><dd>01:12:44</dd></div>
+    </dl>
+  </section>
+  <div id="stages"></div>
+  <section class="mgate" aria-label="decision gate">
+    <div class="lab" style="color:var(--verm)"><span class="sq"></span>? gate / operator</div>
+    <h3>A-22 is blocked by a rate limit; 2 dependents wait.</h3>
+    <div class="opts"><button class="go">[1] wait 41s</button><button class="go primary">[2] reroute</button></div>
+    <div class="more">both reversible &middot; [3] stop branch under more</div>
+  </section>
+  <footer class="mcli"><span style="color:var(--cold)">&rsaquo; aos swarm</span><span class="tag">s simulated</span><span>12:44:19Z / A-22</span></footer>
+  <div class="scrim" id="scrim"></div>
+  <aside class="sheet" id="sheet" aria-label="inspector"></aside>
+</div>
+
+<script>
+/* Deterministic illustrative state: mission MSN-2291 from the authored kit (data.js),
+   with the agent count corrected so named agents + clusters add up (see HANDOFF.md 3.4). */
+const A = [
+  {id:"OBJ", role:"Objective", parent:null, depth:0, lane:.5, harness:"AOS", model:"control plane", state:"running", tok:"1.84M", cost:"$21.40", el:"01:12:44", path:1},
+  {id:"L-01", role:"Lead", parent:"OBJ", depth:1, lane:.5, harness:"AOS", model:"claude-opus-4", state:"running", tok:"180K", cost:"$9.10", el:"01:12:02", path:1, reasoning:"high", ctx:"62% of 200K", ws:"ws/lead", skills:"decompose, budget-guard", mcp:"filings-index", ev:4},
+  {id:"A-07", role:"Supply mapping", parent:"L-01", depth:2, lane:.04, harness:"Codex", model:"gpt-5-codex", state:"running", tok:"640K", cost:"$12.80", el:"22:10", path:1, reasoning:"medium", ctx:"41% of 400K", ws:"ws/a-07", skills:"table-extract", mcp:"filings-index, eur-lex", ev:38},
+  {id:"A-22", role:"Filings audit", parent:"L-01", depth:2, lane:.5, harness:"Claude Code", model:"claude-sonnet-4", state:"blocked", why:"rate limit / anthropic / retry 41s", tok:"94K", cost:"$1.10", el:"03:41", reasoning:"high", ctx:"18% of 200K", ws:"ws/a-22", skills:"cite-check", mcp:"filings-index", ev:6, deps:"A-19, CORE waiting"},
+  {id:"A-31", role:"Demand model", parent:"L-01", depth:2, lane:.96, harness:"DeepSeek Harness", model:"deepseek-r1", state:"complete", tok:"221K", cost:"$0.84", el:"11:03", reasoning:"high", ctx:"34% of 128K", ws:"ws/a-31", skills:"forecast-audit", mcp:"none", ev:14},
+  {id:"A-14", role:"Corpus triage", parent:"A-07", depth:3, lane:0, harness:"Claude Code", model:"claude-sonnet-4", state:"running", tok:"412K", cost:"$4.90", el:"07:22", path:1, reasoning:"medium", ctx:"77% of 200K", ws:"ws/a-14", skills:"dedupe, table-extract", mcp:"filings-index", ev:22},
+  {id:"A-19", role:"Capacity reconciler", parent:"A-07", depth:3, lane:.5, harness:"Codex", model:"gpt-5 -> opus-4", state:"running", handoff:1, tok:"308K", cost:"$6.20", el:"04:58", reasoning:"high", ctx:"handoff at 182K", ws:"ws/a-19", skills:"unit-normalise", mcp:"filings-index", ev:9},
+  {id:"CL-1", role:"Source scanners", parent:"A-07", depth:3, lane:1, cluster:34, dist:{complete:25,running:6,waiting:2,failed:1}, tok:"2.1M", cost:"$18.60", state:"running"},
+  {id:"V-03", role:"Claim verifier", parent:"L-01", via:"A-14", depth:4, lane:.12, harness:"Ollama (local)", model:"qwen3-8b", state:"running", tok:"96K", cost:"$0.00", el:"02:14", path:1, reasoning:"low", ctx:"22% of 32K", ws:"ws/v-03", skills:"verify-claim", mcp:"none", ev:31},
+  {id:"CL-2", role:"Unit normalisers", parent:"A-19", depth:4, lane:.62, cluster:12, dist:{complete:9,running:2,failed:1}, tok:"480K", cost:"$3.20", state:"running"},
+];
+const MARK = {running:"* RUNNING", waiting:". WAITING", blocked:"! BLOCKED", failed:"x FAILED", complete:"+ COMPLETE", verified:"+ VERIFIED", conflict:"! CONFLICT"};
+const SC = {handoff:"var(--uv)", running:"var(--cobalt)", waiting:"var(--metal)", blocked:"var(--uv)", failed:"var(--verm)", complete:"var(--ion)"};
+const by = Object.fromEntries(A.map(a => [a.id, a]));
+const sel = () => decodeURIComponent(location.hash.slice(1)) || null;
+
+/* ---- desktop field ---- */
+const field = document.getElementById("field"), nodes = document.getElementById("nodes"), svg = document.getElementById("traces");
+const LEFT = 132, TOP = 40, CORE_H = 64;
+function layout(){
+  const s = sel(); document.body.classList.toggle("has-sel", !!(s && by[s]));
+  const W = field.clientWidth, H = field.clientHeight;
+  const PW = 264, PH = 60, usable = W - LEFT - 30 - PW, rowH = (H - TOP - CORE_H - 30) / 5;
+  const compact = innerWidth < 1200; // 760-1200 rule: keep the causal path, fold aggregates and quiet branches
+  const shown = A.filter(a => !compact || a.path || a.state === "blocked" || a.handoff);
+  const lane = a => compact ? (a.path ? (a.depth % 2 ? .12 : 0) : 1) : a.lane;
+  const pos = {};
+  // objective sits on the floor, delegation rises above it (constraint below, frontier above)
+  A.forEach(a => { pos[a.id] = {x: LEFT + 10 + lane(a) * usable, y: H - PH - 30 - a.depth * rowH}; });
+  const core = compact ? {x: W - 400, y: TOP + 4} : {x: LEFT + 10 + .30 * usable, y: TOP + 4};
+  if (compact) { // the causal path becomes a spine; the blocked branch sits beside it under the core
+    A.filter(a => a.path).forEach(a => pos[a.id].y = H - PH - 26 - a.depth * (PH + 8));
+    pos["A-19"] = {x: W - PW - 24, y: TOP + 64 + 40};
+    pos["A-22"] = {x: W - PW - 24, y: TOP + 64 + 40 + PH + 44};
+  }
+  // ladder: three named bands, labelled horizontally
+  const lad = document.getElementById("ladder");
+  lad.innerHTML = `<div style="top:0;height:${TOP+CORE_H+16}px"><span class="lab">convergence</span><em>1 core<br>6 branches</em></div>`+
+    `<div style="top:${TOP+CORE_H+16}px;height:${H-TOP-CORE_H-16-rowH-4}px"><span class="lab now">swarm</span><em>13 running<br>1 blocked<br>1 model handoff</em></div>`+
+    `<div style="bottom:0;height:${rowH+4}px"><span class="lab">constraint</span><em>2.5M tokens<br>$8 / branch</em></div>`;
+  // plates
+  const s2 = s && by[s] ? s : null;
+  nodes.innerHTML = shown.map(a => {
+    const p = pos[a.id], on = a.path || a.id === s2 || a.handoff, cls = ["plate", a.cluster?"cluster":"", a.path?"path":"", (!on && a.state!=="blocked")?"off":""].join(" ");
+    const r2 = a.cluster ? `${a.cluster} workers / from ${a.parent} / ${a.dist.failed} failed` : `${a.harness} / ${a.model}`;
+    const dist = a.dist ? `<div class="dist">${Object.entries(a.dist).map(([k,v])=>`<span style="flex:${v};background:${SC[k]}"></span>`).join("")}</div>` : "";
+    const r3 = a.cluster ? `<span class="st running">* ${a.dist.running} RUNNING</span><span>${a.tok} &middot; ${a.cost}</span>` :
+      `<span class="st ${a.state}">${MARK[a.state]}</span><span>${a.tok} &middot; ${a.cost} &middot; ${a.el}</span>`;
+    return `<button class="${cls}" aria-pressed="${a.id===s2}" data-id="${a.id}" style="left:${p.x}px;top:${p.y}px;--sc:${a.handoff ? SC.handoff : SC[a.state]}">
+      <div class="r1"><span>${a.role}</span><i>${a.cluster? "x"+a.cluster : a.id}</i></div><div class="r2">${r2}</div><div class="r3">${r3}</div>${a.cluster? dist : ""}</button>`;
+  }).join("") + `<button class="core" data-id="CORE" style="left:${core.x}px;top:${core.y}px">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--cold)" stroke-width="1"><path d="M16.98 16.18A6.5 6.5 0 1 1 16.98 7.82"/><path d="M0 3 5.9 9.8" stroke-opacity=".72"/><path d="M0 21 5.9 14.2" stroke-opacity=".72"/><path d="M0 12 23 12"/></svg>
+      <div><div class="t">convergence &middot; provisional</div><div class="m">6 branches &middot; 128 evidence &middot; <span style="color:var(--verm)">3 objections</span><br><span class="st waiting">. WAITING</span> &nbsp;on A-22, A-19</div></div></button>
+    <div class="exit" style="left:${core.x+470}px;top:${core.y+12}px;${compact?"display:none":""}">-&gt; gen 08 candidate<br>&nbsp;&nbsp; 4 changes / awaiting approval</div>`;
+  // traces: orthogonal, directed upward from parent to child; active path bright, rest quiet
+  const c = (id) => { const p = pos[id]; return {x:p.x+PW/2, top:p.y, bot:p.y+PH}; };
+  const ids = new Set(shown.map(a => a.id));
+  const edges = [["OBJ","L-01",1],["L-01","A-07",1],["L-01","A-22"],["L-01","A-31"],["A-07","A-14",1],["A-07","A-19"],["A-07","CL-1"],["A-14","V-03",1],["A-19","CL-2"]].filter(([f,t]) => ids.has(f) && ids.has(t));
+  const ortho = (a,b) => { const m = (a.top + b.bot)/2; return `M${a.x} ${a.top} V${m} H${b.x} V${b.bot}`; };
+  let out = `<defs><marker id="ah" viewBox="0 0 8 8" refX="4" refY="7" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 4 7 8 0" fill="none" stroke="var(--cobalt-text)"/></marker></defs>`;
+  edges.forEach(([f,t,act]) => { const blk = t==="A-22";
+    out += `<path d="${ortho(c(f),c(t))}" fill="none" stroke="${act?"var(--cobalt-text)":blk?"var(--uv)":"var(--edge-strong)"}" stroke-width="${act?2:1}" ${act?'marker-end="url(#ah)"':""} ${t.startsWith("CL")?'stroke-dasharray="2 4"':""}/>`; });
+  // into the core: verified completion and active path
+  const coreIn = (id,col,w) => { const a=c(id); return `<path d="M${a.x} ${a.top} V${core.y+64+14} H${core.x+24} V${core.y+50}" fill="none" stroke="${col}" stroke-width="${w}"/>`; };
+  out += coreIn("V-03","var(--cobalt-text)",2) + (ids.has("A-31") ? coreIn("A-31","var(--ion)",1) : "");
+  // dependency, not delegation: A-22 blocks A-19 (dashed, vermilion, labelled)
+  const a22=c("A-22"), a19=c("A-19"), dx = PW/2 - 34;
+  out += `<path d="M${a22.x+dx} ${a22.top} V${a19.bot}" fill="none" stroke="var(--verm)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="${a22.x+dx-6}" text-anchor="end" y="${(a22.top+a19.bot)/2+4}" fill="var(--verm)" font-family="IBM Plex Mono" font-size="10" letter-spacing="1">! BLOCKS</text>`;
+  // the aperture's exit: the run leaves as a candidate generation (mutation), never a loop back
+  if (!compact) out += `<path d="M${core.x+380} ${core.y+32} H${core.x+462}" fill="none" stroke="var(--uv)" stroke-width="1"/>`;
+  svg.innerHTML = out;
+  document.getElementById("caption").textContent = compact ? "46 workers in 2 clusters + 1 complete branch folded · d to unfold" : "46 workers aggregated into 2 clusters · enter a cluster to expand";
+  nodes.querySelectorAll("[data-id]").forEach(b => b.onclick = () => { location.hash = b.dataset.id === sel() ? "" : b.dataset.id; });
+  renderInspector();
+}
+function facts(a){
+  if (a.cluster) return `<dl class="facts"><dt>owner</dt><dd>${a.parent}</dd><dt>workers</dt><dd>${a.cluster}</dd>${Object.entries(a.dist).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}<dt>tokens</dt><dd>${a.tok}</dd><dt>cost</dt><dd>${a.cost} <small>est.</small></dd></dl>`;
+  const parent = by[a.parent] ? `${a.parent} <small>${by[a.parent].role.toLowerCase()}</small>` : "none";
+  return `<dl class="facts"><dt>parent</dt><dd>${parent}</dd><dt>harness</dt><dd>${a.harness}</dd><dt>model</dt><dd>${a.model}</dd><dt>reasoning</dt><dd>${a.reasoning||"n/a"}</dd><dt>context</dt><dd>${a.ctx||"n/a"}</dd><dt>tokens</dt><dd>${a.tok}</dd><dt>cost</dt><dd>${a.cost} <small>est.</small></dd><dt>elapsed</dt><dd>${a.el}</dd><dt>workspace</dt><dd>${a.ws||"mission root"}</dd><dt>skills</dt><dd>${a.skills||"none"}</dd><dt>mcp</dt><dd>${a.mcp||"none"}</dd><dt>evidence</dt><dd>${a.ev??0} items</dd>${a.deps?`<dt>dependents</dt><dd>${a.deps}</dd>`:""}</dl>`;
+}
+function inspectorHTML(a){
+  const kind = a.cluster ? "cluster" : "agent";
+  const why = a.why ? `<p class="why"><span class="st ${a.state}">${MARK[a.state]}</span> / ${a.why}. The open gate below decides what happens next.</p>` :
+    `<p class="why"><span class="st ${a.state}">${MARK[a.state]}</span></p>`;
+  const ev = a.id === "A-22" ? `<div class="sec"><div class="lab">evidence it gates</div><div class="ev"><div class="mono">EV-131 &middot; ! CONFLICT &middot; conf 0.41</div><p>One supplier's disclosed capacity is stated in cell count, not GWh; conversion is unverified.</p><div class="mono">from A-19 &middot; consumed by A-22, CORE</div></div></div>` : "";
+  return `<div class="eb"><span class="lab" style="color:var(--text-2)"><span class="sq" style="color:var(--cold)"></span>${kind} / ${a.id}</span><button class="x" data-close>esc</button></div>
+    <h2>${a.role}</h2>${why}${facts(a)}${ev}
+    <div class="btnrow"><button class="btn">inspect trace</button><button class="btn">open in cli</button></div>
+    <div class="lab" style="margin-top:12px;letter-spacing:0.04em">&rsaquo; aos agent inspect ${a.id.toLowerCase()} &nbsp;(s simulated)</div>`;
+}
+function renderInspector(){
+  const s = sel(), a = s && by[s];
+  const insp = document.getElementById("insp"), sheet = document.getElementById("sheet");
+  insp.innerHTML = a ? inspectorHTML(a) : ""; sheet.innerHTML = a ? inspectorHTML(a) : "";
+  document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => location.hash = "");
+}
+
+/* ---- mobile stages: frontier at the top, constraint at the bottom ---- */
+function stages(){
+  const s = sel();
+  const row = (a, d) => `<div role="button" tabindex="0" class="row ${a.id===s?"sel":""}" data-id="${a.id}" style="--d:${d};--sc:${SC[a.state]}">
+     <span class="t">${a.role}<i>${a.cluster?"x"+a.cluster:a.id}</i></span><span class="st ${a.state}">${a.cluster? a.dist.running+" running" : MARK[a.state]}</span>
+     <span class="s2">${a.cluster? `${a.tok} &middot; ${a.cost} &middot; ${a.dist.failed} failed` : `${a.harness} / ${a.model} &middot; ${a.tok} &middot; ${a.cost}`}</span></div>`;
+  const tree = ["L-01","A-22","A-07","A-14","V-03","A-19","CL-2","CL-1","A-31"].map(id => { const a = by[id]; const d = {"L-01":0,"A-22":1,"A-07":1,"A-31":1,"A-14":2,"A-19":2,"CL-1":2,"V-03":3,"CL-2":3}[id]; return row(a,d); }).join("");
+  const st = (n,t,sub,open,body="") => `<div class="stage ${open?"open":""}"><button><span class="n">${n}</span><span><span class="t">${t}</span><span class="s">${sub}</span></span><span class="x2">${open?"-":"+"}</span></button>${open?body:""}</div>`;
+  document.getElementById("stages").innerHTML =
+    st("05","frontier","3 objections / 1 assumption",0) +
+    st("04","convergence","provisional / waiting on A-22, A-19",0) +
+    st("03","swarm","13 running / 1 blocked / 1 model handoff",1, tree) +
+    st("02","next generation","gen 08 candidate / awaiting approval",0) +
+    st("01","constraint","2.5M tokens / $8 per branch / primary filings",0);
+  document.querySelectorAll("#stages .row").forEach(b => b.onclick = () => { location.hash = b.dataset.id === sel() ? "" : b.dataset.id; });
+  document.getElementById("scrim").onclick = () => location.hash = "";
+}
+function render(){ layout(); stages(); }
+addEventListener("hashchange", render); addEventListener("resize", render);
+addEventListener("keydown", e => { if (e.key === "Escape") location.hash = ""; });
+document.fonts.ready.then(render); render();
+</script>
+</body>
+</html>
