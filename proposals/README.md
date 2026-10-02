@@ -36,6 +36,7 @@ Order is the recommended build order (value toward the goal, then dependencies).
 | 14 | [P12](P12-consented-self-improvement.md) | Retrospectives and reviewed, versioned, reversible improvements under a consent policy | partly PARITY; gate by benchmark is the difference | L | high | proposed | P01, P03, P06, P08, P11 |
 | 15 | [P13](P13-self-organizing-planner.md) | Planner proposes roles, prompts and hierarchy; asks the human | PARITY (decomposer) | L | high | proposed | P06, P03, P07 |
 | 16 | [P16](P16-small-local-models-evaluation.md) | Evaluate small local models on bounded subtasks | unknown | S | low | proposed | P01, P05 |
+| 17 | [P17](P17-front-door-crew.md) | `aos` as the front door: first-run crew, goals in plain words, agents started from aos, one-line install | PARITY on comfort; crew + independent reviewer is the EDGE hypothesis | L | medium | built as draft ACS #26 | P03 to test the edge |
 
 ### Why this order
 
