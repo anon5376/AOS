@@ -104,15 +104,16 @@ Both can get the bus tools without touching the user's project folder [F, from t
 
 I did not build either. Setting up a CLI to run unattended with auto-approval and bus tools, without the user present, was stopped by this session's safety check. It needs the owner's explicit go-ahead. Neither was tested with the real CLI.
 
-## Not built: pause, resume and budgets
+## Built after the first draft: pause, resume and budgets
 
-ACS has no verb for these, so aos does not fake them. A schema-compatible design for both implementations:
+There are new verbs in both implementations: `qagent agent pause <id> [reason]`, `agent resume <id>`, and `agent budget <id> [--turns N] [--minutes N] [--usd N] [--clear]`. In `aos` they are `pause`, `resume <agent>` and `budget <agent|all> 20 turns 60 min $2`.
 
-1. **Pause.** Add an operator-only `agent pause <id>` and `agent resume <id>`, recorded as a nullable `paused_ms` on `agents` (an additive migration in `rust/src/db.rs` and the TS schema) plus `agent.paused` and `agent.resumed` events. Supervisors check before each turn and start no turn while paused. An in-flight turn finishes. A claim left open lapses at its lease, so the task goes back to the pool.
-2. **Budgets.** Add `budget set <agent|crew> [--usd N] [--tokens N]`, stored in a new `budgets` table. Before each turn the supervisor compares the usage it already writes to `sessions/<agent>.json` with the limit. Over the limit, it pauses itself through verb 1 and mails the operator. Limits are only as good as what each CLI reports: Claude reports cost, while Codex reports tokens only.
-3. **aos.** `pause` and `resume <agent>` on an agent, a `$ left` readout on the run line, and a budget line in `crew.json`.
+- **Storage:** both are kept in `agents.meta_json` as `paused` and `budget`, rather than in the new column and table this proposal first sketched. There is no schema change, so the TypeScript and Rust sides share them as they are. `scripts/v2-interop-smoke.mjs` checks that each side reads what the other wrote.
+- **Pause:** the supervisor checks before every turn. A paused agent finishes the turn it is in and then starts no new one. Its mail stays unread, and a claim it holds lapses at its lease.
+- **Budget:** a budget counts turns, the minutes the CLI ran, and dollars as the CLI reported them, from the time it was set. A CLI that reports no cost counts as $0, so only turns and minutes are dependable for every CLI. `aos` says this on screen.
+- **Reaching a budget:** the supervisor pauses the agent and writes to the operator. Resuming starts a fresh allowance of the same size.
 
-Cost: M for both implementations together. Risk: low, since both changes are additive.
+Verified with the stand-in CLI only, through both supervisors' tests and a full `aos` run.
 
 ## Decisions for the owner
 
@@ -121,4 +122,3 @@ Cost: M for both implementations together. Risk: low, since both changes are add
 3. Whether to wire bus tools into the OpenCode, Kimi and Grok adapters so they can join a crew.
 4. Port `instructions` (role prompts) to the TypeScript supervisor for parity.
 5. Whether to build Gemini and Hermes crew support as described above. Both would run with auto-approval.
-6. Whether to build pause and budgets as described above.
