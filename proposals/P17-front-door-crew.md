@@ -87,9 +87,38 @@ Cost was L: about 2,700 added lines in `rust/` (code, tests, prompt and mission 
 - One real Claude Code turn as the lead ($0.05, as the CLI reported).
 - Installer paths: no Rust, building from source, a simulated download, and a bad checksum.
 
+## Added after the first draft (same PR)
+
+- `resume` (also from the shell): starts any stopped crew members, and they carry on with the open goal. When aos opens on an open goal with a stopped crew, it says so.
+- `history`: your last 12 goals, each as open, at your gate, done, failed or stopped.
+- Command home suggests matching commands and missions while you type the first word. `tab` completes, `/help` works, and up and down bring back earlier lines across restarts.
+
+These are PARITY with `claude --continue`, `codex resume` and their slash menus.
+
+## Not built: Gemini and Hermes in a crew
+
+Both can get the bus tools without touching the user's project folder [F, from their source]:
+
+- **Gemini CLI** (`fb972b2`) reads an extra settings file named by `GEMINI_CLI_SYSTEM_SETTINGS_PATH` and shallow-merges its `mcpServers` over the user's. A per-agent file therefore gives each agent its own identity. In an untrusted folder it forces approval mode back to `default`, which `GEMINI_CLI_TRUST_WORKSPACE=true` lifts.
+- **Hermes** (`54bc5e5`) has no per-run MCP flag. A dedicated profile would work: `hermes profile create aos --clone`, plus an `mcp_servers` entry whose env uses `${QAGENT_AGENT_ID}`, which Hermes fills in from the process env. `--clone` does not copy OAuth sign-ins, so some users would sign in once more for that profile.
+
+I did not build either. Setting up a CLI to run unattended with auto-approval and bus tools, without the user present, was stopped by this session's safety check. It needs the owner's explicit go-ahead. Neither was tested with the real CLI.
+
+## Not built: pause, resume and budgets
+
+ACS has no verb for these, so aos does not fake them. A schema-compatible design for both implementations:
+
+1. **Pause.** Add an operator-only `agent pause <id>` and `agent resume <id>`, recorded as a nullable `paused_ms` on `agents` (an additive migration in `rust/src/db.rs` and the TS schema) plus `agent.paused` and `agent.resumed` events. Supervisors check before each turn and start no turn while paused. An in-flight turn finishes. A claim left open lapses at its lease, so the task goes back to the pool.
+2. **Budgets.** Add `budget set <agent|crew> [--usd N] [--tokens N]`, stored in a new `budgets` table. Before each turn the supervisor compares the usage it already writes to `sessions/<agent>.json` with the limit. Over the limit, it pauses itself through verb 1 and mails the operator. Limits are only as good as what each CLI reports: Claude reports cost, while Codex reports tokens only.
+3. **aos.** `pause` and `resume <agent>` on an agent, a `$ left` readout on the run line, and a budget line in `crew.json`.
+
+Cost: M for both implementations together. Risk: low, since both changes are additive.
+
 ## Decisions for the owner
 
 1. Merge #26, then push a tag `aos-v0.1.0`, so `install.sh` downloads binaries instead of building them.
 2. Whether `aos` stays the name of the front door, and whether Rust stays the front-door implementation. Both were taken as defaults.
-3. Whether to wire bus tools into the Gemini, Hermes, OpenCode, Kimi and Grok adapters so they can join a crew. That would be a Hermes worker on an ACS crew, the lane Hermes itself says is not paved.
+3. Whether to wire bus tools into the OpenCode, Kimi and Grok adapters so they can join a crew.
 4. Port `instructions` (role prompts) to the TypeScript supervisor for parity.
+5. Whether to build Gemini and Hermes crew support as described above. Both would run with auto-approval.
+6. Whether to build pause and budgets as described above.
